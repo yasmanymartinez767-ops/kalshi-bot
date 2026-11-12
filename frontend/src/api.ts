@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { DashboardData, Trade, BotStats, WeatherForecast, WeatherSignal, BacktestData, WhaleTrade, WhaleStats, BtcCandle, KxBtcMarket, KxBtcSnapshot } from './types'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_URL || 'https://kalshi-bot-production-c581af3c.up.railway.app'
 
 const api = axios.create({
   baseURL: `${API_BASE}/api`,
