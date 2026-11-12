@@ -46,3 +46,16 @@ jobs:
           if errores or not archivos:
               sys.exit(1)
           PY
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias React
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Compilar interfaz y velas BTC
+        working-directory: frontend
+        run: npm run build
