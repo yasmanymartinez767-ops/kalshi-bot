@@ -74,7 +74,25 @@ class KalshiClient:
         limiting is visible instead of surfacing as an opaque exception."""
         url = f"{BASE_URL}{path}"
         for attempt in range(_MAX_RATE_LIMIT_RETRIES + 1):
-            headers = self._sign_request(method, path)
+            public_paths = (
+    "/markets",
+    "/series",
+    "/events",
+    "/trades",
+)
+
+is_public = (
+    method.upper() == "GET"
+    and any(
+        path == p or path.startswith(p + "/")
+        for p in public_paths
+    )
+)
+
+if is_public:
+    headers = {"Accept": "application/json"}
+else:
+    headers = self._sign_request(method, path)
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.request(method, url, headers=headers, **kwargs)
             if response.status_code != 429:
