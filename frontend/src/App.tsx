@@ -189,6 +189,19 @@ function App() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
   })
 
+  // BTC must render independently of the legacy weather dashboard API.
+  if (view === 'btc') {
+    return (
+      <div className="h-[100dvh] min-h-0 flex flex-col bg-[#071626] text-[#e0edff] overflow-hidden">
+        <header className="shrink-0 px-3 py-2 border-b border-[#254158] flex items-center justify-between">
+          <strong className="text-sm tracking-wide text-amber-400">♛ YMC · BTC PREDICTOR AI PRO</strong>
+          <button className="text-xs text-[#9db4ca] border border-[#254158] px-2 py-1 rounded" onClick={() => setView('dashboard')}>Menú</button>
+        </header>
+        <BtcMarketView />
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
