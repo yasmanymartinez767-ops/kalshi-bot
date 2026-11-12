@@ -165,7 +165,7 @@ function ForecastCard({ f }: { f: WeatherForecast }) {
 // ── main app ──────────────────────────────────────────────────────────────────
 
 function App() {
-  const [view, setView] = useState<View>('dashboard')
+  const [view, setView] = useState<View>('btc')
   const queryClient = useQueryClient()
 
   const { data, isLoading, error, refetch } = useQuery({
