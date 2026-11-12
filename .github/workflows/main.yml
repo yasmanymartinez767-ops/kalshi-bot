@@ -1,0 +1,48 @@
+
+name: Verificar Kalshi Bot
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Comprobar sintaxis Python
+        run: |
+          python - <<'PY'
+          import pathlib
+          import sys
+
+          errores = []
+          archivos = list(pathlib.Path("backend").rglob("*.py"))
+          for archivo in archivos:
+              try:
+                  compile(
+                      archivo.read_bytes(),
+                      str(archivo),
+                      "exec"
+                  )
+              except (SyntaxError, ValueError) as e:
+                  errores.append(f"{archivo}: {e}")
+
+          for error in errores:
+              print(error)
+
+          print(f"Archivos revisados: {len(archivos)}")
+          if errores or not archivos:
+              sys.exit(1)
+          PY
