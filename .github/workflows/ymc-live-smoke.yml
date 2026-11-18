@@ -1,0 +1,23 @@
+name: Probar fuentes BTC en vivo (solo lectura)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/ymc_live_feed_smoke.py'
+      - '.github/workflows/ymc-live-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Consultar Coinbase y Kalshi reales sin operaciones
+        run: python scripts/ymc_live_feed_smoke.py
