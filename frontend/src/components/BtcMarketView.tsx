@@ -8,16 +8,18 @@ import { BtcProbabilityChart } from './BtcProbabilityChart'
 type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string }
 
 function YmcSignalPanel() {
-  const { data, isError } = useQuery<YmcSignal>({
+  const { data, isError, isPending, isFetching, dataUpdatedAt } = useQuery<YmcSignal>({
     queryKey: ['ymc-technical'],
     queryFn: fetchYmcTechnical,
     refetchInterval: 10000,
+    staleTime: 5000,
     retry: 1,
   })
-  const valid = !isError && data?.validated === true && Date.now() - Date.parse(data.as_of_utc) <= 150000
+  const valid = !isError && data?.validated === true && Number.isFinite(Date.parse(data.as_of_utc)) && Date.now() - Date.parse(data.as_of_utc) >= 0 && Date.now() - Date.parse(data.as_of_utc) <= 150000
+  const status = isPending ? 'CONECTANDO' : isError ? 'SIN CONEXIÓN' : !valid ? (data?.reason ?? 'DATOS NO VÁLIDOS') : isFetching ? 'ACTUALIZANDO' : 'DATOS VALIDADOS'
   const direction = valid ? data!.direction : 'ESPERAR'
   return (
-    <div className="shrink-0 border-b border-[#254158] bg-[#041321] px-3 py-2 text-[11px]" aria-live="polite">
+    <div className="shrink-0 border-b border-[#254158] bg-[#041321] px-3 py-2 text-[11px]" translate="no" aria-live="polite">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
         <span className="font-bold text-[#e4b95b]">♛ YMC · IA TÉCNICA</span>
         <span className={direction === 'ALCISTA' ? 'text-[#26a69a] font-bold' : direction === 'BAJISTA' ? 'text-[#ef5350] font-bold' : 'text-[#9db4ca] font-bold'}>{direction}</span>
@@ -25,9 +27,9 @@ function YmcSignalPanel() {
         <span>EMA 9/21: {valid ? data!.ema9?.toFixed(2) : '—'} / {valid ? data!.ema21?.toFixed(2) : '—'}</span>
         <span>RSI 14: {valid ? data!.rsi14?.toFixed(1) : '—'}</span>
         <span>MACD (12,26,9): {valid ? data!.macd_hist?.toFixed(3) : '—'}</span>
-        <span className="text-[#9db4ca]">Coinbase 1m · {valid ? data!.as_of_utc.slice(11, 19) + ' UTC' : (isError ? 'SIN CONEXIÓN' : data?.reason ?? 'CARGANDO')}</span>
+        <span className="text-[#9db4ca]">Coinbase 1m · {status} {valid ? '· ' + data!.as_of_utc.slice(11, 19) + ' UTC' : ''}</span>
       </div>
-      <div className="text-[10px] text-[#9598a1] mt-1">Señal técnica informativa, no probabilidad ni recomendación de entrada. Coinbase spot ≠ referencia de liquidación Kalshi.</div>
+      <div className="text-[10px] text-[#9598a1] mt-1">{dataUpdatedAt ? `Última consulta: ${new Date(dataUpdatedAt).toLocaleTimeString()}. ` : ""}Señal técnica informativa, no probabilidad ni recomendación de entrada. Coinbase spot ≠ referencia de liquidación Kalshi.</div>
     </div>
   )
 }
@@ -53,6 +55,7 @@ function ToolbarButton({ active, onClick, children }: { active: boolean; onClick
   return (
     <button
       onClick={onClick}
+      translate="no"
       className={`px-2 py-1 text-[11px] font-medium rounded transition-colors ${
         active
           ? 'bg-[#2962ff] text-white'
