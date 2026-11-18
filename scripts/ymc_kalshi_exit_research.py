@@ -28,13 +28,20 @@ def main():
         } for row in rows]
     finally:
         db.close()
+    yes = evaluate_bid_drop_alerts(snapshots, side="YES")
+    no = evaluate_bid_drop_alerts(snapshots, side="NO")
+    # Keep output compact; individual ticker diagnostics stay available in Python.
+    yes.pop("rows", None)
+    no.pop("rows", None)
     result = {
         "source": "persisted_kalshi_kxbtc15m_quotes",
         "lookback_days": days,
         "snapshots": len(snapshots),
         "unique_contracts": len({r["ticker"] for r in snapshots}),
-        "yes": evaluate_bid_drop_alerts(snapshots, side="YES"),
-        "no": evaluate_bid_drop_alerts(snapshots, side="NO"),
+        "yes": yes,
+        "no": no,
+        "method": "first three-quote drop per contract; compare next bid at 60-90s; exclude expiry",
+        "limitation": "Alert success means a further decline, not proven profitability. No unalerted baseline, fees, or executable fill model.",
     }
     if not snapshots:
         result["warning"] = "NO HISTORICAL SNAPSHOTS IN CONNECTED DATABASE; NO ACCURACY CLAIM POSSIBLE"
