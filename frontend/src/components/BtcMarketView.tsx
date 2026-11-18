@@ -7,6 +7,23 @@ import { BtcProbabilityChart } from './BtcProbabilityChart'
 
 type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean; candle_context?: { pattern: string; sideways_watch: boolean; volume_ratio_20: number | null; volume_elevated: boolean; pattern_validated: boolean } }
 
+// Future horizons are intentionally not inferred from the current 1m vote count.
+// A probability requires a separate, calibrated 5m/10m/15m forecasting model.
+function YmcHorizonScale({ valid }: { valid: boolean }) {
+  return (
+    <div className="mt-2 grid grid-cols-3 gap-1.5" aria-label="Escala predictiva por horizonte">
+      {([5, 10, 15] as const).map(minutes => (
+        <div key={minutes} className="min-w-0 rounded border border-[#254158] bg-[#071626] px-2 py-1.5 text-center">
+          <div className="text-[10px] font-bold text-[#e4b95b]">{minutes} MIN</div>
+          <div className="text-[16px] font-bold tabular-nums text-[#9db4ca]">—%</div>
+          <div className="text-[10px] text-[#9db4ca]">{valid ? 'EN EVALUACIÓN' : 'SIN DATOS'}</div>
+        </div>
+      ))}
+      <div className="col-span-3 text-[10px] text-[#9598a1]">Probabilidad de SUBE/BAJA por horizonte: pendiente de modelo calibrado. No confundir votos técnicos con porcentajes.</div>
+    </div>
+  )
+}
+
 function YmcSignalPanel() {
   const { data, isError, isPending, isFetching, dataUpdatedAt } = useQuery<YmcSignal>({
     queryKey: ['ymc-technical'],
@@ -29,6 +46,7 @@ function YmcSignalPanel() {
         <span>MACD (12,26,9): {valid ? data!.macd_hist?.toFixed(3) : '—'}</span>
         <span className="text-[#9db4ca]">Coinbase 1m · {status} {valid ? '· ' + data!.as_of_utc.slice(11, 19) + ' UTC' : ''}</span>
       </div>
+      <YmcHorizonScale valid={valid} />
       {valid && data?.early_watch && data.early_watch !== 'NINGUNA' && (
         <div className="mt-1 text-[11px] text-[#e4b95b]">Vigilancia temprana: {data.early_watch.split('_').join(' ')} · Patrón exploratorio, sin precisión validada</div>
       )}
