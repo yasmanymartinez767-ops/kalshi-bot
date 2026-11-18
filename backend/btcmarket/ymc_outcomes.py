@@ -229,3 +229,28 @@ def quarter_hour_coverage(candles, results):
             "wait_slots": eligible - directional,
             "directional_coverage": directional / eligible if eligible else None,
             "note": "Data-valid decision coverage; future outcomes may be unavailable near end of history"}
+
+
+def chronological_holdout_report(results):
+    """Untuned time split: earlier UTC dates are reference, last date held out.
+
+    No model fitting or threshold selection is performed. The holdout is a
+    diagnostic, not evidence of out-of-sample model training or Kalshi P&L.
+    """
+    selected = [r for r in results if r.get("horizon_minutes") == 15
+                and r.get("decision_utc")
+                and datetime.fromisoformat(r["decision_utc"]).minute % 15 == 0]
+    dates = sorted({r["decision_utc"][:10] for r in selected})
+    if len(dates) < 2:
+        return {"reference_dates_utc": dates[:-1], "holdout_date_utc": dates[-1] if dates else None,
+                "reference": {}, "holdout": {}, "note": "Insufficient distinct dates for chronological holdout"}
+    holdout_day = dates[-1]
+    reference = [r for r in selected if r["decision_utc"][:10] < holdout_day]
+    holdout = [r for r in selected if r["decision_utc"][:10] == holdout_day]
+    def by_direction(rows):
+        return {direction: summarize([r for r in rows if r.get("direction") == direction]).get(15, {})
+                for direction in ("ALCISTA", "BAJISTA")}
+    return {"reference_dates_utc": dates[:-1], "holdout_date_utc": holdout_day,
+            "reference": {"summary": summarize(reference).get(15, {}), "by_direction": by_direction(reference)},
+            "holdout": {"summary": summarize(holdout).get(15, {}), "by_direction": by_direction(holdout)},
+            "note": "Exploratory chronological spot-price split; no training, no strategy selection, not Kalshi returns"}
