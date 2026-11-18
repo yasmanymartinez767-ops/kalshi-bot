@@ -1,4 +1,4 @@
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check, aligned_quarter_hour_report
 
 
 def sample(n=65):
@@ -64,3 +64,15 @@ def test_forward_day_check_does_not_count_reference_day():
     assert report["reference_day_utc"] == "2026-11-15"
     assert report["forward_day_count"] == 1
     assert list(report["forward_days"]) == ["2026-11-16"]
+
+
+def test_quarter_hour_report_only_uses_15m_boundary():
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:01:01+00:00", "horizon_minutes": 15, "correct": False, "actual_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 10, "correct": True, "actual_direction": "ALCISTA"},
+    ]
+    report = aligned_quarter_hour_report(rows)
+    assert report["aligned_decisions"] == 1
+    assert report["summary"]["signals"] == 1
+    assert aligned_quarter_hour_report([])["aligned_decisions"] == 0
