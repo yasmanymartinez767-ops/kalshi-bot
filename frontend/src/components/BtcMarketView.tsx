@@ -346,7 +346,7 @@ export function BtcMarketView() {
           <ChartPanel title="BTC/USD Candlestick (Coinbase)">
             <BtcCandlestickChart candles={candles ?? []} showPatterns={showPatterns} viewKey={viewKey} />
           </ChartPanel>
-        </div>}
+        </div>
 
         {showExtraCharts && <div className="border-b border-[#254158] min-h-0 h-[320px] lg:h-auto">
           <ChartPanel title="BTC/USD vs. Kalshi Target (Candlestick)">
@@ -358,7 +358,7 @@ export function BtcMarketView() {
               targetLabel="Target"
             />
           </ChartPanel>
-        </div>
+        </div>}
 
         {showExtraCharts && <div className="border-r border-[#254158] min-h-0 h-[320px] lg:h-auto">
           <ChartPanel title="Kalshi YES Price (Candlestick, real orderbook OHLC)">
@@ -370,14 +370,14 @@ export function BtcMarketView() {
               targetLabel="50%"
             />
           </ChartPanel>
-        </div>
+        </div>}
 
         {showExtraCharts && <div className="min-h-0 h-[320px] lg:h-auto">
           <ChartPanel title="Kalshi YES Probability (smoothed, orderbook mid)">
             <BtcProbabilityChart snapshots={snapshots ?? []} viewKey={historyRange} />
           </ChartPanel>
         </div>}
-      </div>
+      </div>}
     </div>
   )
 }
