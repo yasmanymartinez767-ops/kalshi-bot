@@ -95,7 +95,7 @@ async def get_ymc_technical():
     candles = candles_mod.get_cached_candles(60, timedelta(hours=3))
     now = datetime.now(timezone.utc).timestamp()
     # Exclude the currently forming candle inserted by the live-price poller.
-    closed = [c for c in candles if c["time"] + 60 <= now]
+    closed = [c for c in candles if c["time"] + 60 < now]
     result = evaluate(closed, now=now)
     # Poller placeholders have zero volume; do not treat them as Coinbase OHLCV.
     if result["validated"] and any(c["volume"] <= 0 for c in closed[-40:]):
