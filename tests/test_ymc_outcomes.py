@@ -1,4 +1,4 @@
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report
 
 
 def sample(n=65):
@@ -42,3 +42,11 @@ def test_non_overlapping_signal_counts():
         assert summary[horizon]["non_overlapping_scored"] <= summary[horizon]["scored"]
         assert 0 <= summary[horizon]["non_overlapping_always_up_baseline"] <= 1
         assert 0 <= summary[horizon]["non_overlapping_always_down_baseline"] <= 1
+
+
+def test_daily_report_groups_by_utc_date():
+    rows = evaluate_history(sample())
+    daily = daily_report(rows)
+    assert daily
+    assert all(len(day) == 10 for day in daily)
+    assert sum(v["signals"] for horizons in daily.values() for v in horizons.values()) == len(rows)
