@@ -113,3 +113,16 @@ def breakdown(results):
                 }
         output[horizon] = groups
     return output
+
+
+def daily_report(results):
+    """UTC daily diagnostics; descriptive only, no training or parameter selection."""
+    output = {}
+    for row in results:
+        day = row.get("decision_utc", "")[:10]
+        if not day:
+            continue
+        horizon = row["horizon_minutes"]
+        output.setdefault(day, {}).setdefault(horizon, []).append(row)
+    return {day: summarize([r for group in horizons.values() for r in group])
+            for day, horizons in sorted(output.items())}
