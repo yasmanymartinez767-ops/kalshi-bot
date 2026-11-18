@@ -44,6 +44,7 @@ def evaluate_history(candles, horizons=(10, 15)):
                 "exit_spot": exit_price,
                 "spot_change": move,
                 "correct": correct if move != 0 else None,
+                "actual_direction": "ALCISTA" if move > 0 else "BAJISTA" if move < 0 else "PLANO",
                 "note": "Offline Coinbase spot outcome; not Kalshi contract profitability",
             })
     return results
@@ -55,11 +56,15 @@ def summarize(results):
     for horizon in sorted({r["horizon_minutes"] for r in results}):
         group = [r for r in results if r["horizon_minutes"] == horizon]
         scored = [r for r in group if r["correct"] is not None]
+        baseline_up = sum(r["actual_direction"] == "ALCISTA" for r in scored) / len(scored) if scored else None
+        baseline_down = sum(r["actual_direction"] == "BAJISTA" for r in scored) / len(scored) if scored else None
         summary[horizon] = {
             "signals": len(group),
             "scored": len(scored),
             "correct": sum(r["correct"] is True for r in scored),
             "hit_rate": (sum(r["correct"] is True for r in scored) / len(scored)) if scored else None,
+            "always_up_baseline": baseline_up,
+            "always_down_baseline": baseline_down,
             "validated_predictive_accuracy": False,
         }
     return summary
