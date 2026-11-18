@@ -49,6 +49,7 @@ def test_candle_context_exposed():
 
 def test_bullish_lower_wick_detected():
     data = candles()
+    data[-2]["low"] = data[-2]["open"]  # no previous rejection/continuation
     last = data[-1]
     last["open"] = 140
     last["close"] = 140.2
@@ -61,6 +62,7 @@ def test_bullish_lower_wick_detected():
 
 def test_bearish_upper_wick_detected():
     data = candles()
+    data[-2]["low"] = data[-2]["open"]  # isolate the current upper-wick pattern
     last = data[-1]
     last["open"] = 140
     last["close"] = 139.8
