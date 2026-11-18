@@ -259,7 +259,25 @@ def early_watch_diagnostic(results):
         reversal_checks[warning] = {"expected_spot_direction": expected, "scored": len(rows),
                                     "matches": successes, "match_rate": successes / len(rows) if rows else None,
                                     "wilson_95": wilson_95_interval(successes, len(rows))}
+    dates = sorted({r["decision_utc"][:10] for r in selected})
+    holdout_date = dates[-1] if len(dates) >= 2 else None
+    def reversal_by_day(rows):
+        output = {}
+        for warning, expected in (("POSIBLE_AGOTAMIENTO_ALCISTA", "BAJISTA"),
+                                  ("POSIBLE_AGOTAMIENTO_BAJISTA", "ALCISTA")):
+            matches = [r for r in rows if r.get("early_watch") == warning and r.get("actual_direction") in ("ALCISTA", "BAJISTA")]
+            correct = sum(r["actual_direction"] == expected for r in matches)
+            output[warning] = {"scored": len(matches), "matches": correct,
+                               "match_rate": correct / len(matches) if matches else None,
+                               "wilson_95": wilson_95_interval(correct, len(matches))}
+        return output
     return {"total_aligned_signals": len(selected),
+            "reversal_chronological_diagnostic": {
+                "reference_dates_utc": dates[:-1] if holdout_date else dates,
+                "holdout_date_utc": holdout_date,
+                "reference": reversal_by_day([r for r in selected if not holdout_date or r["decision_utc"][:10] < holdout_date]),
+                "holdout": reversal_by_day([r for r in selected if r["decision_utc"][:10] == holdout_date]) if holdout_date else {},
+                "note": "Last UTC day not used to define the warning rule; exploratory only, no fitting"},
             "reversal_hypotheses_exploratory": reversal_checks,
             "by_early_watch": {
                 warning: summarize([r for r in selected if r.get("early_watch", "NINGUNA") == warning]).get(15, {})
