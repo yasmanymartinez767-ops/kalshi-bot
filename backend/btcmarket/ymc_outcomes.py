@@ -1,0 +1,63 @@
+"""Evaluate previously recorded YMC decisions against future *closed* BTC candles.
+
+Offline research only. Never uses future candles when constructing a signal.
+Prices are Coinbase spot, NOT Kalshi settlement prices.
+"""
+from datetime import datetime, timezone
+from backend.btcmarket.ymc_signal import evaluate
+
+
+def evaluate_history(candles, horizons=(10, 15)):
+    """Chronological 1m OHLCV with Unix opening timestamps.
+
+    Returns only fully observed outcomes. Invalid/gapped history is skipped.
+    """
+    results = []
+    if not candles:
+        return results
+    rows = sorted(candles, key=lambda c: c["time"])
+    for idx in range(39, len(rows)):
+        window = rows[idx - 39:idx + 1]
+        # One second after candle close; avoids evaluating an open candle.
+        decision_time = int(window[-1]["time"]) + 61
+        signal = evaluate(window, now=decision_time)
+        if not signal["validated"] or signal["direction"] == "ESPERAR":
+            continue
+        entry = float(window[-1]["close"])
+        for horizon in horizons:
+            if not isinstance(horizon, int) or horizon <= 0 or idx + horizon >= len(rows):
+                continue
+            future = rows[idx + horizon]
+            if int(future["time"]) - int(window[-1]["time"]) != horizon * 60:
+                continue
+            exit_price = float(future["close"])
+            move = exit_price - entry
+            correct = (move > 0 if signal["direction"] == "ALCISTA" else move < 0)
+            results.append({
+                "decision_utc": datetime.fromtimestamp(decision_time, timezone.utc).isoformat(),
+                "direction": signal["direction"],
+                "votes": signal["votes"],
+                "horizon_minutes": horizon,
+                "entry_spot": entry,
+                "exit_spot": exit_price,
+                "spot_change": move,
+                "correct": correct if move != 0 else None,
+                "note": "Offline Coinbase spot outcome; not Kalshi contract profitability",
+            })
+    return results
+
+
+def summarize(results):
+    """Ignore flat moves when computing directional hit rate."""
+    summary = {}
+    for horizon in sorted({r["horizon_minutes"] for r in results}):
+        group = [r for r in results if r["horizon_minutes"] == horizon]
+        scored = [r for r in group if r["correct"] is not None]
+        summary[horizon] = {
+            "signals": len(group),
+            "scored": len(scored),
+            "correct": sum(r["correct"] is True for r in scored),
+            "hit_rate": (sum(r["correct"] is True for r in scored) / len(scored)) if scored else None,
+            "validated_predictive_accuracy": False,
+        }
+    return summary
