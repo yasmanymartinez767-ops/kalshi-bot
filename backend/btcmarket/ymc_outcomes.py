@@ -4,6 +4,7 @@ Offline research only. Never uses future candles when constructing a signal.
 Prices are Coinbase spot, NOT Kalshi settlement prices.
 """
 from datetime import datetime, timezone
+from math import sqrt
 from backend.btcmarket.ymc_signal import evaluate
 
 
@@ -54,6 +55,18 @@ def evaluate_history(candles, horizons=(10, 15)):
     return results
 
 
+def wilson_95_interval(successes, total):
+    """95% Wilson binomial interval; assumes approximately independent trials."""
+    if total <= 0:
+        return None
+    z = 1.959963984540054
+    p = successes / total
+    denominator = 1 + z * z / total
+    center = (p + z * z / (2 * total)) / denominator
+    half = z * sqrt((p * (1 - p) + z * z / (4 * total)) / total) / denominator
+    return {"lower": max(0.0, center - half), "upper": min(1.0, center + half)}
+
+
 def summarize(results):
     """Ignore flat moves when computing directional hit rate."""
     summary = {}
@@ -83,7 +96,8 @@ def summarize(results):
             "signals": len(group),
             "non_overlapping_signals": len(independent),
             "non_overlapping_scored": len(independent_scored),
-            "non_overlapping_hit_rate": (sum(r["correct"] is True for r in independent_scored) / len(independent_scored)) if independent_scored else None,
+            "non_overlapping_hit_rate": independent_hit_rate,
+            "non_overlapping_wilson_95": wilson_95_interval(sum(r["correct"] is True for r in independent_scored), len(independent_scored)),
             "non_overlapping_always_up_baseline": independent_up,
             "non_overlapping_always_down_baseline": independent_down,
             "non_overlapping_best_baseline": best_baseline,
