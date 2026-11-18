@@ -1,4 +1,4 @@
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check, aligned_quarter_hour_report
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check, aligned_quarter_hour_report, wilson_95_interval
 
 
 def sample(n=65):
@@ -88,3 +88,11 @@ def test_momentum_baseline_is_reported_from_past_only():
         assert stats["non_overlapping_momentum_baseline_scored"] <= stats["non_overlapping_scored"]
         rate = stats["non_overlapping_momentum_baseline_hit_rate"]
         assert rate is None or 0 <= rate <= 1
+
+
+def test_wilson_uncertainty_bounds():
+    assert wilson_95_interval(0, 0) is None
+    for wins, total in [(0, 10), (5, 10), (10, 10), (92, 216)]:
+        interval = wilson_95_interval(wins, total)
+        assert 0 <= interval["lower"] <= wins / total <= interval["upper"] <= 1
+    assert wilson_95_interval(5, 100)["upper"] - wilson_95_interval(5, 100)["lower"] < wilson_95_interval(1, 20)["upper"] - wilson_95_interval(1, 20)["lower"]
