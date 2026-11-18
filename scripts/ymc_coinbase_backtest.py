@@ -17,8 +17,8 @@ def download_closed_minutes(minutes=4320):
     end = (int(time.time()) // 60 - 2) * 60
     start = end - minutes * 60
     by_time = {}
-    for beginning in range(start, end, 300 * 60):
-        finish = min(beginning + 300 * 60, end)
+    for beginning in range(start, end, 299 * 60):
+        finish = min(beginning + 299 * 60, end)
         params = urlencode({
             "start": datetime.fromtimestamp(beginning, timezone.utc).isoformat(),
             "end": datetime.fromtimestamp(finish, timezone.utc).isoformat(),
