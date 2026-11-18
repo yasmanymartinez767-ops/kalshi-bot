@@ -164,3 +164,16 @@ def test_daily_coverage_partitions_all_valid_slots():
     assert sum(day["wait_slots"] for day in days.values()) == coverage["wait_slots"]
     for day in days.values():
         assert day["eligible_slots"] == day["directional_slots"] + day["wait_slots"]
+
+
+def test_early_watch_diagnostic_groups_aligned_rows():
+    from backend.btcmarket.ymc_outcomes import early_watch_diagnostic
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "correct": False, "actual_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "early_watch": "NINGUNA", "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:16:01+00:00", "horizon_minutes": 15, "early_watch": "NINGUNA", "correct": True, "actual_direction": "ALCISTA"},
+    ]
+    report = early_watch_diagnostic(rows)
+    assert report["total_aligned_signals"] == 2
+    assert report["by_early_watch"]["POSIBLE_AGOTAMIENTO_ALCISTA"]["signals"] == 1
+    assert sum(x["signals"] for x in report["by_early_watch"].values()) == 2
