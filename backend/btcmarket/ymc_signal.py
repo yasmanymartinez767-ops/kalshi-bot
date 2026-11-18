@@ -57,7 +57,7 @@ def evaluate(candles, now=None):
                 return wait("missing_or_misaligned_candles")
         if any(t % 60 for t in ts):
             return wait("unaligned_timestamp")
-        if ts[-1] > now - 60 or now - (ts[-1] + 60) > 90:
+        if ts[-1] >= now - 60 or now - (ts[-1] + 60) > 90:
             return wait("unclosed_or_stale_candles")
         for c in rows:
             o,h,l,cl,v = (float(c[k]) for k in ("open","high","low","close","volume"))
