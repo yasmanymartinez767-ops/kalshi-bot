@@ -23,6 +23,7 @@ def parse_price(value):
 def analyze(rows):
     groups = defaultdict(list)
     errors = 0
+    expired_quotes_excluded = 0
     for row in rows:
         if row.get("error"):
             errors += 1
@@ -40,6 +41,7 @@ def analyze(rows):
             except (ValueError, TypeError):
                 continue
             if expiry.tzinfo is None or at >= expiry:
+                expired_quotes_excluded += 1
                 continue
         for side in ("yes", "no"):
             ask = parse_price(row.get(side + "_ask"))
@@ -96,6 +98,7 @@ def analyze(rows):
         "contract_sides": len(groups),
         "valid_side_quotes": observations,
         "api_errors": errors,
+        "expired_quotes_excluded": expired_quotes_excluded,
         "best_observed_gross_gain_cents_by_contract_side": best_gross_gain,
         "entry_points_with_later_bid_gain_over_20c": len(opportunities),
         "opportunities": opportunities[:100],
