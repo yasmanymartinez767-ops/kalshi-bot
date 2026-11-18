@@ -76,6 +76,7 @@ def test_quarter_hour_report_only_uses_15m_boundary():
     assert report["aligned_decisions"] == 1
     assert report["summary"]["signals"] == 1
     assert report["daily_utc"]["2026-11-18"][15]["signals"] == 1
+    assert report["by_votes_exploratory"] == {}
     assert aligned_quarter_hour_report([])["aligned_decisions"] == 0
 
 
@@ -103,3 +104,13 @@ def test_quarter_hour_coverage_includes_wait_slots():
     coverage = quarter_hour_coverage(sample(), [])
     assert coverage["eligible_slots"] == coverage["directional_slots"] + coverage["wait_slots"]
     assert coverage["directional_coverage"] is None or 0 <= coverage["directional_coverage"] <= 1
+
+
+def test_aligned_vote_groups_partition_signals():
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "votes": 5, "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "votes": 0, "correct": False, "actual_direction": "BAJISTA"},
+    ]
+    report = aligned_quarter_hour_report(rows)
+    assert set(report["by_votes_exploratory"]) == {"0", "5"}
+    assert sum(v["signals"] for v in report["by_votes_exploratory"].values()) == 2
