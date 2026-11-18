@@ -161,5 +161,7 @@ def aligned_quarter_hour_report(results):
         instant = datetime.fromisoformat(row["decision_utc"])
         if instant.minute % 15 == 0:
             selected.append(row)
+    by_day = daily_report(selected)
     return {"aligned_decisions": len(selected), "summary": summarize(selected).get(15, {}),
+            "daily_utc": by_day,
             "note": "UTC quarter-hour Coinbase spot only; not a Kalshi backtest"}
