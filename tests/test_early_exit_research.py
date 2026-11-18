@@ -55,3 +55,21 @@ def test_excludes_expired_quotes_and_stale_outcomes():
     assert result["alerts"] == 2
     assert result["unresolved"] == 2
     assert result["resolved"] == 0
+
+
+def test_fixed_third_quote_baseline_counts_resolved_contracts():
+    rows = [
+        {"ticker": "A", "time": 0, "yes_bid": .50},
+        {"ticker": "A", "time": 6, "yes_bid": .49},
+        {"ticker": "A", "time": 12, "yes_bid": .47},
+        {"ticker": "A", "time": 72, "yes_bid": .44},
+        {"ticker": "B", "time": 0, "yes_bid": .30},
+        {"ticker": "B", "time": 6, "yes_bid": .32},
+        {"ticker": "B", "time": 12, "yes_bid": .34},
+        {"ticker": "B", "time": 72, "yes_bid": .36},
+    ]
+    result = evaluate_bid_drop_alerts(rows)
+    assert result["baseline_third_quote"]["resolved"] == 2
+    assert result["baseline_third_quote"]["further_declines"] == 1
+    assert result["baseline_third_quote"]["decline_rate"] == 0.5
+    assert result["alerts"] == 1
