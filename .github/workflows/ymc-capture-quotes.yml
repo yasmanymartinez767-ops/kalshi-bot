@@ -29,7 +29,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kalshi-btc15m-quotes-\${{ github.run_id }}
+          name: kalshi-btc15m-quotes-${{ github.run_id }}
           path: kalshi_btc15m_live_quotes.jsonl
           if-no-files-found: warn
           retention-days: 30
