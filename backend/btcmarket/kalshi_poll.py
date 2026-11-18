@@ -124,6 +124,7 @@ def get_recent_snapshots(lookback: timedelta) -> List[dict]:
             {
                 "time": int(r.timestamp.replace(tzinfo=timezone.utc).timestamp()),
                 "ticker": r.ticker,
+                "close_time": int(r.close_time.replace(tzinfo=timezone.utc).timestamp()) if r.close_time is not None else None,
                 "event_ticker": r.event_ticker,
                 "floor_strike": r.floor_strike,
                 "yes_bid": r.yes_bid,
