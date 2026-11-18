@@ -32,8 +32,16 @@ def collect():
                 with urlopen(req, timeout=15) as response:
                     markets = json.load(response).get("markets", [])
                 active = [m for m in markets if str(m.get("ticker", "")).startswith("KXBTC15M")]
+                # Prefer the earliest upcoming expiry; API ordering is not guaranteed.
+                now = at
+                def expiry(market):
+                    try:
+                        return datetime.fromisoformat(str(market.get("close_time", "")).replace("Z", "+00:00"))
+                    except (ValueError, TypeError):
+                        return datetime.max.replace(tzinfo=timezone.utc)
+                active = [m for m in active if expiry(m) > now]
                 if active:
-                    m = active[0]
+                    m = min(active, key=expiry)
                     row.update({"ticker": m.get("ticker"), "close_time": m.get("close_time"),
                                 "yes_bid": m.get("yes_bid_dollars"), "yes_ask": m.get("yes_ask_dollars"),
                                 "no_bid": m.get("no_bid_dollars"), "no_ask": m.get("no_ask_dollars")})
