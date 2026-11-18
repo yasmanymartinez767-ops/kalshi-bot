@@ -27,9 +27,11 @@ def evaluate_history(candles, horizons=(10, 15)):
         for horizon in horizons:
             if not isinstance(horizon, int) or horizon <= 0 or idx + horizon >= len(rows):
                 continue
-            future = rows[idx + horizon]
-            if int(future["time"]) - int(window[-1]["time"]) != horizon * 60:
+            future_window = rows[idx:idx + horizon + 1]
+            if any(int(b["time"]) - int(a["time"]) != 60
+                   for a, b in zip(future_window, future_window[1:])):
                 continue
+            future = future_window[-1]
             exit_price = float(future["close"])
             move = exit_price - entry
             correct = (move > 0 if signal["direction"] == "ALCISTA" else move < 0)
