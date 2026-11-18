@@ -271,7 +271,22 @@ def early_watch_diagnostic(results):
                                "match_rate": correct / len(matches) if matches else None,
                                "wilson_95": wilson_95_interval(correct, len(matches))}
         return output
+    def reversal_by_direction(rows):
+        out = {}
+        for warning, expected in (("POSIBLE_AGOTAMIENTO_ALCISTA", "BAJISTA"),
+                                  ("POSIBLE_AGOTAMIENTO_BAJISTA", "ALCISTA")):
+            out[warning] = {}
+            for original in ("ALCISTA", "BAJISTA"):
+                sample = [r for r in rows if r.get("early_watch") == warning
+                          and r.get("direction") == original
+                          and r.get("actual_direction") in ("ALCISTA", "BAJISTA")]
+                wins = sum(r["actual_direction"] == expected for r in sample)
+                out[warning][original] = {"scored": len(sample), "reversals": wins,
+                                          "reversal_rate": wins / len(sample) if sample else None,
+                                          "wilson_95": wilson_95_interval(wins, len(sample))}
+        return out
     return {"total_aligned_signals": len(selected),
+            "reversal_by_original_signal_exploratory": reversal_by_direction(selected),
             "reversal_chronological_diagnostic": {
                 "reference_dates_utc": dates[:-1] if holdout_date else dates,
                 "holdout_date_utc": holdout_date,
