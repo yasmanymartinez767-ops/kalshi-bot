@@ -4,6 +4,7 @@ An opportunity is a later executable bid strictly more than 20 cents above
 an earlier ask, within the SAME contract and side. No order is assumed filled.
 """
 import json
+import math
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -15,7 +16,7 @@ TARGET_CENTS = 20.0
 def parse_price(value):
     try:
         result = float(value) * 100
-        return result if 0 <= result <= 100 else None
+        return result if math.isfinite(result) and 0 <= result <= 100 else None
     except (TypeError, ValueError):
         return None
 
