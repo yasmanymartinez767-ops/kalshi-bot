@@ -38,6 +38,7 @@ def evaluate_history(candles, horizons=(10, 15)):
             results.append({
                 "decision_utc": datetime.fromtimestamp(decision_time, timezone.utc).isoformat(),
                 "direction": signal["direction"],
+                "momentum_baseline_direction": ("ALCISTA" if entry > float(window[-6]["close"]) else "BAJISTA" if entry < float(window[-6]["close"]) else "ESPERAR"),
                 "votes": signal["votes"],
                 "pattern": signal.get("candle_context", {}).get("pattern", "NINGUNO"),
                 "volume_elevated": signal.get("candle_context", {}).get("volume_elevated", False),
@@ -76,6 +77,8 @@ def summarize(results):
         independent_down = sum(r.get("actual_direction") == "BAJISTA" for r in independent_scored) / len(independent_scored) if independent_scored else None
         independent_hit_rate = (sum(r["correct"] is True for r in independent_scored) / len(independent_scored)) if independent_scored else None
         best_baseline = max(independent_up, independent_down) if independent_up is not None and independent_down is not None else None
+        momentum_scored = [r for r in independent_scored if r.get("momentum_baseline_direction") in ("ALCISTA", "BAJISTA")]
+        momentum_rate = (sum(r["momentum_baseline_direction"] == r.get("actual_direction") for r in momentum_scored) / len(momentum_scored)) if momentum_scored else None
         summary[horizon] = {
             "signals": len(group),
             "non_overlapping_signals": len(independent),
@@ -84,6 +87,8 @@ def summarize(results):
             "non_overlapping_always_up_baseline": independent_up,
             "non_overlapping_always_down_baseline": independent_down,
             "non_overlapping_best_baseline": best_baseline,
+            "non_overlapping_momentum_baseline_scored": len(momentum_scored),
+            "non_overlapping_momentum_baseline_hit_rate": momentum_rate,
             "non_overlapping_edge_vs_best_baseline": (independent_hit_rate - best_baseline) if independent_hit_rate is not None and best_baseline is not None else None,
             "scored": len(scored),
             "correct": sum(r["correct"] is True for r in scored),
