@@ -42,6 +42,7 @@ def evaluate_history(candles, horizons=(10, 15)):
                 "momentum_baseline_direction": ("ALCISTA" if entry > float(window[-6]["close"]) else "BAJISTA" if entry < float(window[-6]["close"]) else "ESPERAR"),
                 "votes": signal["votes"],
                 "pattern": signal.get("candle_context", {}).get("pattern", "NINGUNO"),
+                "early_watch": signal.get("early_watch", "NINGUNA"),
                 "volume_elevated": signal.get("candle_context", {}).get("volume_elevated", False),
                 "sideways_watch": signal.get("candle_context", {}).get("sideways_watch", False),
                 "horizon_minutes": horizon,
@@ -239,6 +240,22 @@ def quarter_hour_coverage(candles, results):
             "daily_utc": daily_counts,
             "directional_coverage": directional / eligible if eligible else None,
             "note": "Data-valid decision coverage; future outcomes may be unavailable near end of history"}
+
+
+def early_watch_diagnostic(results):
+    """Exploratory aligned 15m spot outcomes grouped by past-only exhaustion warnings.
+
+    Warning flags are descriptive; no reversal or profitability is implied.
+    """
+    selected = [r for r in results if r.get("horizon_minutes") == 15
+                and r.get("decision_utc")
+                and datetime.fromisoformat(r["decision_utc"]).minute % 15 == 0]
+    warnings = sorted({r.get("early_watch", "NINGUNA") for r in selected})
+    return {"total_aligned_signals": len(selected),
+            "by_early_watch": {
+                warning: summarize([r for r in selected if r.get("early_watch", "NINGUNA") == warning]).get(15, {})
+                for warning in warnings},
+            "note": "Past-only exhaustion/indecision tags; exploratory spot outcomes, not reversal validation or Kalshi P&L"}
 
 
 def chronological_holdout_report(results):
