@@ -75,4 +75,5 @@ def test_quarter_hour_report_only_uses_15m_boundary():
     report = aligned_quarter_hour_report(rows)
     assert report["aligned_decisions"] == 1
     assert report["summary"]["signals"] == 1
+    assert report["daily_utc"]["2026-11-18"][15]["signals"] == 1
     assert aligned_quarter_hour_report([])["aligned_decisions"] == 0
