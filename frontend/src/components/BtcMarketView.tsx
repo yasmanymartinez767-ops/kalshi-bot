@@ -5,7 +5,7 @@ import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, f
 import { BtcCandlestickChart } from './BtcCandlestickChart'
 import { BtcProbabilityChart } from './BtcProbabilityChart'
 
-type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string }
+type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean }
 
 function YmcSignalPanel() {
   const { data, isError, isPending, isFetching, dataUpdatedAt } = useQuery<YmcSignal>({
@@ -29,6 +29,9 @@ function YmcSignalPanel() {
         <span>MACD (12,26,9): {valid ? data!.macd_hist?.toFixed(3) : '—'}</span>
         <span className="text-[#9db4ca]">Coinbase 1m · {status} {valid ? '· ' + data!.as_of_utc.slice(11, 19) + ' UTC' : ''}</span>
       </div>
+      {valid && data?.early_watch && data.early_watch !== 'NINGUNA' && (
+        <div className="mt-1 text-[11px] text-[#e4b95b]">Vigilancia temprana: {data.early_watch.replaceAll('_', ' ')} · Patrón exploratorio, sin precisión validada</div>
+      )}
       <div className="text-[10px] text-[#9598a1] mt-1">{dataUpdatedAt ? `Última consulta: ${new Date(dataUpdatedAt).toLocaleTimeString()}. ` : ""}Señal técnica informativa, no probabilidad ni recomendación de entrada. Coinbase spot ≠ referencia de liquidación Kalshi.</div>
     </div>
   )
