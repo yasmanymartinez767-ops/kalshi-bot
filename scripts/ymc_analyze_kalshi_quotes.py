@@ -44,6 +44,7 @@ def analyze(rows):
     best_gross_gain = {}
     first_opportunity_by_contract_side = {}
     contract_side_summaries = []
+    affordable_opportunities = []
     for (ticker, side), quotes in sorted(groups.items()):
         quotes.sort(key=lambda q: q[0])
         observations += len(quotes)
@@ -79,6 +80,8 @@ def analyze(rows):
                         "elapsed_seconds": round((exit_at - entry_at).total_seconds(), 3),
                     }
                     opportunities.append(opportunity)
+                    if 10 <= entry_ask <= 60:
+                        affordable_opportunities.append(opportunity)
                     first_opportunity_by_contract_side.setdefault(key, opportunity)
                     break
     return {
@@ -88,6 +91,9 @@ def analyze(rows):
         "best_observed_gross_gain_cents_by_contract_side": best_gross_gain,
         "entry_points_with_later_bid_gain_over_20c": len(opportunities),
         "opportunities": opportunities[:100],
+        "entry_points_10_to_60c_with_later_gain_over_20c": len(affordable_opportunities),
+        "distinct_contract_sides_10_to_60c_with_later_gain_over_20c": len({(o["ticker"], o["side"]) for o in affordable_opportunities}),
+        "sample_10_to_60c_opportunities": affordable_opportunities[:30],
         "contract_sides_with_at_least_one_over_20c_opportunity": len(first_opportunity_by_contract_side),
         "first_opportunity_by_contract_side": list(first_opportunity_by_contract_side.values()),
         "contract_side_summaries": contract_side_summaries,
