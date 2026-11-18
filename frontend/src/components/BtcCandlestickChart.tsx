@@ -160,7 +160,7 @@ export function BtcCandlestickChart({
     <div
       ref={containerRef}
       className="w-full h-full min-h-0"
-      style={{ background: BG, touchAction: 'pan-x pinch-zoom' }}
+      style={{ background: BG, touchAction: 'pan-y pinch-zoom' }}
       onDoubleClick={() => {
         const count = candles.length
         if (count > 0) chartRef.current?.timeScale().setVisibleLogicalRange({
