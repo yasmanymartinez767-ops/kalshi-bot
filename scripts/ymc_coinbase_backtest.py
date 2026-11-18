@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, breakdown, daily_report, forward_day_check, aligned_quarter_hour_report, quarter_hour_coverage, chronological_holdout_report
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, breakdown, daily_report, forward_day_check, aligned_quarter_hour_report, quarter_hour_coverage, chronological_holdout_report, early_watch_diagnostic
 
 
 def download_closed_minutes(minutes=4320):
@@ -54,5 +54,6 @@ if __name__ == "__main__":
         "quarter_hour_spot_diagnostic": aligned_quarter_hour_report(results),
         "quarter_hour_signal_coverage": quarter_hour_coverage(candles, results),
         "chronological_holdout_diagnostic": chronological_holdout_report(results),
+        "early_watch_spot_diagnostic": early_watch_diagnostic(results),
         "warning": "Overlapping in-sample signals; exploratory only, not out-of-sample accuracy or Kalshi returns",
     }, indent=2))
