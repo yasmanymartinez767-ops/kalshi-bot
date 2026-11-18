@@ -124,3 +124,17 @@ def test_aligned_direction_breakdown_matches_all_signals():
     ]
     report = aligned_quarter_hour_report(rows)
     assert sum(v["summary"]["signals"] for v in report["by_direction_exploratory"].values()) == report["aligned_decisions"]
+
+
+def test_momentum_comparison_uses_same_subset():
+    from backend.btcmarket.ymc_outcomes import summarize
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "correct": True, "actual_direction": "ALCISTA", "momentum_baseline_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "correct": False, "actual_direction": "BAJISTA", "momentum_baseline_direction": "ESPERAR"},
+    ]
+    stats = summarize(rows)[15]
+    assert stats["non_overlapping_momentum_baseline_scored"] == 1
+    assert stats["non_overlapping_ymc_on_momentum_subset_hit_rate"] == 1
+    assert stats["non_overlapping_momentum_baseline_hit_rate"] == 0
+    assert stats["non_overlapping_edge_vs_momentum_on_same_subset"] == 1
+    assert stats["best_baseline_is_hindsight_only"] is True
