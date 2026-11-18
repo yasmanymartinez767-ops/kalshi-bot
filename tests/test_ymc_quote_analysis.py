@@ -44,6 +44,19 @@ class OpportunityTests(unittest.TestCase):
         self.assertEqual(result["first_opportunity_by_contract_side"][0]["elapsed_seconds"], 60.0)
         self.assertEqual(result["first_opportunity_by_contract_side"][0]["gross_gain_cents"], 21.0)
 
+    def test_affordable_entry_range_is_separate(self):
+        result = analyze([quote("00", yes_ask="0.20", yes_bid="0.19", no_ask="0.81", no_bid="0.80"),
+                          quote("01", yes_ask="0.42", yes_bid="0.41", no_ask="0.59", no_bid="0.58")])
+        self.assertEqual(result["entry_points_10_to_60c_with_later_gain_over_20c"], 1)
+        self.assertEqual(result["distinct_contract_sides_10_to_60c_with_later_gain_over_20c"], 1)
+        self.assertEqual(result["sample_10_to_60c_opportunities"][0]["entry_ask_cents"], 20.0)
+
+    def test_outside_affordable_range_excluded(self):
+        result = analyze([quote("00", yes_ask="0.61", yes_bid="0.60", no_ask="0.09", no_bid="0.08"),
+                          quote("01", yes_ask="0.83", yes_bid="0.82", no_ask="0.17", no_bid="0.16")])
+        self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 1)
+        self.assertEqual(result["entry_points_10_to_60c_with_later_gain_over_20c"], 0)
+
     def test_yes_no_are_separate(self):
         result = analyze([quote("00", yes_ask="0.20", yes_bid="0.19", no_ask="0.20", no_bid="0.19"),
                           quote("01", yes_ask="0.42", yes_bid="0.41", no_ask="0.42", no_bid="0.41")])
