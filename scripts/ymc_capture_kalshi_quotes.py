@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 URL = "https://api.elections.kalshi.com/trade-api/v2/markets"
 INTERVAL = max(3, int(os.getenv("YMC_SAMPLE_INTERVAL_SECONDS", "5")))
-DURATION = min(840, max(10, int(os.getenv("YMC_SAMPLE_DURATION_SECONDS", "180"))))
+DURATION = min(1020, max(10, int(os.getenv("YMC_SAMPLE_DURATION_SECONDS", "960"))))
 OUTPUT = os.getenv("YMC_SAMPLE_OUTPUT", "kalshi_btc15m_live_quotes.jsonl")
 
 
@@ -19,6 +19,9 @@ def collect():
     started = time.monotonic()
     count = 0
     tickers = set()
+    first_seen = {}
+    last_seen = {}
+    failures = 0
     with open(OUTPUT, "w", encoding="utf-8") as output:
         while time.monotonic() - started < DURATION:
             at = datetime.now(timezone.utc)
@@ -34,10 +37,14 @@ def collect():
                     row.update({"ticker": m.get("ticker"), "close_time": m.get("close_time"),
                                 "yes_bid": m.get("yes_bid_dollars"), "yes_ask": m.get("yes_ask_dollars"),
                                 "no_bid": m.get("no_bid_dollars"), "no_ask": m.get("no_ask_dollars")})
-                    tickers.add(m.get("ticker"))
+                    ticker = m.get("ticker")
+                    tickers.add(ticker)
+                    first_seen.setdefault(ticker, at.isoformat())
+                    last_seen[ticker] = at.isoformat()
                 else:
                     row["warning"] = "No open KXBTC15M market"
             except Exception as exc:
+                failures += 1
                 row["error"] = str(exc)
             output.write(json.dumps(row, separators=(",", ":")) + "\n")
             output.flush()
@@ -46,6 +53,8 @@ def collect():
             if remaining > 0:
                 time.sleep(min(INTERVAL, remaining))
     print(json.dumps({"observations": count, "unique_contracts": len(tickers),
+                      "first_seen_utc": first_seen, "last_seen_utc": last_seen,
+                      "api_errors": failures,
                       "file": OUTPUT, "orders_placed": 0, "predictive_accuracy_validated": False}))
     if not tickers:
         raise RuntimeError("No real Kalshi BTC15M contracts captured")
