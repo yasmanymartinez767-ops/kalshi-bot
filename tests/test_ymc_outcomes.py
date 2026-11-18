@@ -23,7 +23,8 @@ def test_missing_future_candle_never_scored():
     data[50]["time"] += 1
     outcomes = evaluate_history(data)
     assert all(r["entry_spot"] < r["exit_spot"] for r in outcomes)
-    assert not any(r["entry_spot"] == 140 for r in outcomes)
+    assert any(r["entry_spot"] == 140 and r["horizon_minutes"] == 10 for r in outcomes)
+    assert not any(r["entry_spot"] == 140 and r["horizon_minutes"] == 15 for r in outcomes)
 
 
 def test_summary_empty_is_safe():
