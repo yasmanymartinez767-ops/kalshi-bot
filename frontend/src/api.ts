@@ -99,3 +99,12 @@ export async function fetchKalshiCandles(range: '1h' | '1d' | '1w' | '1m' = '1d'
   const { data } = await api.get<BtcCandle[]>('/btc/kalshi-candles', { params: { range } })
   return data
 }
+
+export async function fetchYmcTechnical(): Promise<{
+  direction: string; votes: number | null; validated: boolean; reason: string;
+  rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number;
+  as_of_utc: string; source: string; settlement_price_warning: string;
+}> {
+  const { data } = await api.get('/btc/ymc-technical')
+  return data
+}
