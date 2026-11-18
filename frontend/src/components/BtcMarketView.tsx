@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, type BtcInterval, type BtcLookback } from '../api'
+import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, fetchYmcTechnical, type BtcInterval, type BtcLookback } from '../api'
 
 import { BtcCandlestickChart } from './BtcCandlestickChart'
 import { BtcProbabilityChart } from './BtcProbabilityChart'
@@ -10,11 +10,7 @@ type YmcSignal = { direction: string; votes: number | null; validated: boolean; 
 function YmcSignalPanel() {
   const { data, isError } = useQuery<YmcSignal>({
     queryKey: ['ymc-technical'],
-    queryFn: async () => {
-      const response = await fetch('/api/btc/ymc-technical')
-      if (!response.ok) throw new Error('Technical signal unavailable')
-      return response.json() as Promise<YmcSignal>
-    },
+    queryFn: fetchYmcTechnical,
     refetchInterval: 10000,
     retry: 1,
   })
