@@ -34,7 +34,7 @@ function YmcSignalPanel() {
       )}
       {valid && data?.candle_context && (
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px]" aria-label="Análisis de velas cerradas">
-          <span className="text-[#e4b95b]">Patrón 1m: {data.candle_context.pattern.replaceAll('_', ' ')}</span>
+          <span className="text-[#e4b95b]">Patrón 1m: {data.candle_context.pattern.split('_').join(' ')}</span>
           <span>Volumen / promedio 20m: {data.candle_context.volume_ratio_20 == null ? '—' : data.candle_context.volume_ratio_20.toFixed(2) + 'x'}</span>
           {data.candle_context.volume_elevated && <span className="text-[#e4b95b]">VOLUMEN ELEVADO</span>}
           {data.candle_context.sideways_watch && <span className="text-[#e4b95b]">POSIBLE MERCADO LATERAL · ESPERAR</span>}
