@@ -56,8 +56,8 @@ def summarize(results):
     for horizon in sorted({r["horizon_minutes"] for r in results}):
         group = [r for r in results if r["horizon_minutes"] == horizon]
         scored = [r for r in group if r["correct"] is not None]
-        baseline_up = sum(r["actual_direction"] == "ALCISTA" for r in scored) / len(scored) if scored else None
-        baseline_down = sum(r["actual_direction"] == "BAJISTA" for r in scored) / len(scored) if scored else None
+        baseline_up = sum(r.get("actual_direction") == "ALCISTA" for r in scored) / len(scored) if scored else None
+        baseline_down = sum(r.get("actual_direction") == "BAJISTA" for r in scored) / len(scored) if scored else None
         summary[horizon] = {
             "signals": len(group),
             "scored": len(scored),
