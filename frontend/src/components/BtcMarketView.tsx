@@ -24,6 +24,45 @@ function YmcHorizonScale({ valid }: { valid: boolean }) {
   )
 }
 
+function EarlyExitRadar() {
+  const [side, setSide] = useState<'YES' | 'NO'>('YES')
+  const [entryCents, setEntryCents] = useState('')
+  const { data, isError, dataUpdatedAt } = useQuery({
+    queryKey: ['btc-market'], queryFn: fetchBtcMarket, refetchInterval: 1000,
+  })
+  const market = data?.market
+  const bid = side === 'YES' ? market?.yes_bid : market?.no_bid
+  const ask = side === 'YES' ? market?.yes_ask : market?.no_ask
+  const fresh = !isError && !!market && !!dataUpdatedAt && Date.now() - dataUpdatedAt < 15000
+  const quoted = fresh && typeof bid === 'number' && typeof ask === 'number' &&
+    Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > 0 && bid <= ask && ask <= 1
+  const entry = entryCents.trim() === '' ? null : Number(entryCents)
+  const entryValid = entry !== null && Number.isFinite(entry) && entry > 0 && entry < 100
+  const gross = quoted && entryValid ? bid * 100 - entry : null
+  return (
+    <div className="mt-2 rounded border border-[#254158] bg-[#071626] px-2 py-2" aria-label="Radar de salida anticipada">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-bold text-[#e4b95b]">RADAR SALIDA · KALSHI 15M</span>
+        <span className="text-[#9db4ca]">{quoted ? 'COTIZACIÓN DISPONIBLE' : 'SIN COTIZACIÓN VÁLIDA'}</span>
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        <label className="text-[#9db4ca]">Contrato
+          <select value={side} onChange={e => setSide(e.target.value as 'YES' | 'NO')} className="ml-1 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]">
+            <option value="YES">YES</option><option value="NO">NO</option>
+          </select>
+        </label>
+        <label className="text-[#9db4ca]">Entrada (¢)
+          <input aria-label="Precio de entrada en centavos" type="number" min="1" max="99" step="0.1" value={entryCents} onChange={e => setEntryCents(e.target.value)} placeholder="—" className="ml-1 w-16 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]" />
+        </label>
+        <span>Venta al bid: <strong className="text-[#e0edff]">{quoted ? (bid * 100).toFixed(1) + '¢' : '—'}</strong></span>
+        <span>Spread: <strong>{quoted ? ((ask - bid) * 100).toFixed(1) + '¢' : '—'}</strong></span>
+        <span>Resultado bruto: <strong className={gross === null ? 'text-[#9db4ca]' : gross >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}>{gross === null ? '—' : (gross >= 0 ? '+' : '') + gross.toFixed(1) + '¢/contrato'}</strong></span>
+      </div>
+      <div className="mt-1 text-[10px] text-[#9598a1]">Estimación usando el mejor bid, sin comisiones, deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
+    </div>
+  )
+}
+
 function YmcSignalPanel() {
   const { data, isError, isPending, isFetching, dataUpdatedAt } = useQuery<YmcSignal>({
     queryKey: ['ymc-technical'],
@@ -47,6 +86,7 @@ function YmcSignalPanel() {
         <span className="text-[#9db4ca]">Coinbase 1m · {status} {valid ? '· ' + data!.as_of_utc.slice(11, 19) + ' UTC' : ''}</span>
       </div>
       <YmcHorizonScale valid={valid} />
+      <EarlyExitRadar />
       {valid && data?.early_watch && data.early_watch !== 'NINGUNA' && (
         <div className="mt-1 text-[11px] text-[#e4b95b]">Vigilancia temprana: {data.early_watch.split('_').join(' ')} · Patrón exploratorio, sin precisión validada</div>
       )}
