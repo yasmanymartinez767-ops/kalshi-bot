@@ -214,6 +214,7 @@ def quarter_hour_coverage(candles, results):
     rows = sorted(candles, key=lambda c: c["time"])
     eligible = 0
     directional = 0
+    daily_counts = {}
     for idx in range(39, len(rows)):
         window = rows[idx - 39:idx + 1]
         decision_time = int(window[-1]["time"]) + 61
@@ -223,10 +224,19 @@ def quarter_hour_coverage(candles, results):
         if not signal["validated"]:
             continue
         eligible += 1
+        day = datetime.fromtimestamp(decision_time, timezone.utc).date().isoformat()
+        daily_counts.setdefault(day, {"eligible_slots": 0, "directional_slots": 0, "wait_slots": 0})
+        daily_counts[day]["eligible_slots"] += 1
         if signal["direction"] in ("ALCISTA", "BAJISTA"):
             directional += 1
+            daily_counts[day]["directional_slots"] += 1
+        else:
+            daily_counts[day]["wait_slots"] += 1
+    for counts in daily_counts.values():
+        counts["directional_coverage"] = counts["directional_slots"] / counts["eligible_slots"]
     return {"eligible_slots": eligible, "directional_slots": directional,
             "wait_slots": eligible - directional,
+            "daily_utc": daily_counts,
             "directional_coverage": directional / eligible if eligible else None,
             "note": "Data-valid decision coverage; future outcomes may be unavailable near end of history"}
 
