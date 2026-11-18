@@ -269,6 +269,7 @@ export function BtcMarketView() {
   const [lookback, setLookback] = useState<BtcLookback>('1d')
   const [historyRange, setHistoryRange] = useState<'1h' | '1d' | '1w' | '1m'>('1d')
   const [showPatterns, setShowPatterns] = useState(true)
+  const [showExtraCharts, setShowExtraCharts] = useState(false)
   const viewKey = `${interval}-${lookback}`
 
   const { data: candles } = useQuery({
@@ -321,7 +322,10 @@ export function BtcMarketView() {
           ))}
         </div>
         <ToolbarButton active={showPatterns} onClick={() => setShowPatterns(v => !v)}>
-          Pattern markers
+          Patrones
+        </ToolbarButton>
+        <ToolbarButton active={showExtraCharts} onClick={() => setShowExtraCharts(v => !v)}>
+          {showExtraCharts ? "Ocultar gráficos extra" : "Ver gráficos extra"}
         </ToolbarButton>
         <div className="flex-1" />
         <span className="text-[10px] text-[#9598a1]">
@@ -336,15 +340,15 @@ export function BtcMarketView() {
         </div>
       )}
 
-      {/* 2x2 grid: all four charts share the same filters, theme, pattern markers, and view-state preservation */}
-      <div className="shrink-0 grid grid-cols-1 auto-rows-[300px] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:grid-cols-2 lg:grid-rows-2 lg:auto-rows-auto">
+      {/* Prioritize one readable BTC chart on mobile; secondary charts are opt-in. */}
+      <div className={`shrink-0 grid grid-cols-1 gap-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto ${showExtraCharts ? "lg:grid-cols-2 lg:grid-rows-2" : "lg:grid-cols-1"}`}>
         <div className="border-b border-r border-[#254158] min-h-0 h-[min(64vh,520px)] min-h-[330px] lg:h-auto">
           <ChartPanel title="BTC/USD Candlestick (Coinbase)">
             <BtcCandlestickChart candles={candles ?? []} showPatterns={showPatterns} viewKey={viewKey} />
           </ChartPanel>
-        </div>
+        </div>}
 
-        <div className="border-b border-[#254158] min-h-0">
+        {showExtraCharts && <div className="border-b border-[#254158] min-h-0 h-[320px] lg:h-auto">
           <ChartPanel title="BTC/USD vs. Kalshi Target (Candlestick)">
             <BtcCandlestickChart
               candles={candles ?? []}
@@ -356,7 +360,7 @@ export function BtcMarketView() {
           </ChartPanel>
         </div>
 
-        <div className="border-r border-[#254158] min-h-0">
+        {showExtraCharts && <div className="border-r border-[#254158] min-h-0 h-[320px] lg:h-auto">
           <ChartPanel title="Kalshi YES Price (Candlestick, real orderbook OHLC)">
             <BtcCandlestickChart
               candles={kalshiCandles ?? []}
@@ -368,11 +372,11 @@ export function BtcMarketView() {
           </ChartPanel>
         </div>
 
-        <div className="min-h-0">
+        {showExtraCharts && <div className="min-h-0 h-[320px] lg:h-auto">
           <ChartPanel title="Kalshi YES Probability (smoothed, orderbook mid)">
             <BtcProbabilityChart snapshots={snapshots ?? []} viewKey={historyRange} />
           </ChartPanel>
-        </div>
+        </div>}
       </div>
     </div>
   )
