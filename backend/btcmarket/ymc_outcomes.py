@@ -58,8 +58,22 @@ def summarize(results):
         scored = [r for r in group if r["correct"] is not None]
         baseline_up = sum(r.get("actual_direction") == "ALCISTA" for r in scored) / len(scored) if scored else None
         baseline_down = sum(r.get("actual_direction") == "BAJISTA" for r in scored) / len(scored) if scored else None
+        # Adjacent decisions share most of their future window. Report a non-overlapping
+        # diagnostic so a large count of correlated decisions is not mistaken for
+        # independent evidence.
+        independent = []
+        next_allowed = None
+        for row in sorted(group, key=lambda r: r["decision_utc"]):
+            t = datetime.fromisoformat(row["decision_utc"]).timestamp()
+            if next_allowed is None or t >= next_allowed:
+                independent.append(row)
+                next_allowed = t + horizon * 60
+        independent_scored = [r for r in independent if r["correct"] is not None]
         summary[horizon] = {
             "signals": len(group),
+            "non_overlapping_signals": len(independent),
+            "non_overlapping_scored": len(independent_scored),
+            "non_overlapping_hit_rate": (sum(r["correct"] is True for r in independent_scored) / len(independent_scored)) if independent_scored else None,
             "scored": len(scored),
             "correct": sum(r["correct"] is True for r in scored),
             "hit_rate": (sum(r["correct"] is True for r in scored) / len(scored)) if scored else None,
