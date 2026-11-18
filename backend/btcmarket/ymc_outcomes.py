@@ -130,3 +130,19 @@ def daily_report(results):
         output.setdefault(day, {}).setdefault(horizon, []).append(row)
     return {day: summarize([r for group in horizons.values() for r in group])
             for day, horizons in sorted(output.items())}
+
+
+def forward_day_check(results):
+    """Leave-one-day-forward diagnostic, no fitted thresholds or future features.
+
+    Compare the frozen signal logic on each subsequent UTC day. The first
+    observed date is a reference period, not a scored forward day.
+    """
+    daily = daily_report(results)
+    dates = sorted(daily)
+    return {
+        "reference_day_utc": dates[0] if dates else None,
+        "forward_days": {day: daily[day] for day in dates[1:]},
+        "forward_day_count": max(0, len(dates) - 1),
+        "note": "Frozen-rule forward chronological diagnostic; not true live walk-forward training or independent Kalshi validation",
+    }
