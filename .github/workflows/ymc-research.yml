@@ -22,7 +22,7 @@ jobs:
           python-version: '3.11'
       - name: Evaluar señales BTC 10 y 15 minutos
         run: |
-          python scripts/ymc_coinbase_backtest.py | tee ymc-research.json
+          PYTHONPATH=. python scripts/ymc_coinbase_backtest.py | tee ymc-research.json
       - name: Guardar resultados verificables
         uses: actions/upload-artifact@v4
         with:
