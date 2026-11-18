@@ -12,13 +12,18 @@ def fetch(url):
 def main():
     now = datetime.now(timezone.utc)
     result = {"checked_at_utc": now.isoformat(), "orders_placed": 0}
-    candles = fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60")
+    # A bounded time range avoids a potentially cached default candle response.
+    from datetime import timedelta
+    start = (now - timedelta(minutes=12)).isoformat()
+    end = now.isoformat()
+    from urllib.parse import urlencode
+    candles = fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?" + urlencode({"granularity": 60, "start": start, "end": end}))
     closed = [row for row in candles if int(row[0]) + 60 <= now.timestamp() - 30]
     if not closed:
         raise RuntimeError("Coinbase: no safely closed BTC-USD minute candles")
     latest = max(closed, key=lambda row: row[0])
     age = now.timestamp() - (latest[0] + 60)
-    result["coinbase"] = {"closed_candle_age_seconds": round(age), "close_usd": latest[4], "ok": age <= 180}
+    result["coinbase"] = {"closed_candle_age_seconds": round(age), "close_usd": latest[4], "ok": 0 <= age <= 180}
     # Continue to Kalshi even when Coinbase is stale, so both feeds are diagnosed.
     if not result["coinbase"]["ok"]:
         result["coinbase"]["warning"] = "Closed Coinbase candle older than 180 seconds"
