@@ -189,3 +189,15 @@ def test_early_reversal_hypothesis_counts_spot_direction_not_ymc_correctness():
     assert report["POSIBLE_AGOTAMIENTO_ALCISTA"]["match_rate"] == 1
     assert report["POSIBLE_AGOTAMIENTO_BAJISTA"]["matches"] == 1
     assert report["POSIBLE_AGOTAMIENTO_ALCISTA"]["wilson_95"]["upper"] == 1
+
+
+def test_early_reversal_last_day_is_separated():
+    from backend.btcmarket.ymc_outcomes import early_watch_diagnostic
+    rows = [
+        {"decision_utc": "2026-11-17T12:00:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "correct": False, "actual_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "correct": True, "actual_direction": "ALCISTA"},
+    ]
+    result = early_watch_diagnostic(rows)["reversal_chronological_diagnostic"]
+    assert result["holdout_date_utc"] == "2026-11-18"
+    assert result["reference"]["POSIBLE_AGOTAMIENTO_ALCISTA"]["match_rate"] == 1
+    assert result["holdout"]["POSIBLE_AGOTAMIENTO_ALCISTA"]["match_rate"] == 0
