@@ -41,9 +41,19 @@ def analyze(rows):
             groups[(ticker, side.upper())].append((at, ask, bid))
     opportunities = []
     observations = 0
+    best_gross_gain = {}
     for (ticker, side), quotes in sorted(groups.items()):
         quotes.sort(key=lambda q: q[0])
         observations += len(quotes)
+        # Maximum later bid minus an earlier ask, without crossing contract boundaries.
+        minimum_prior_ask = None
+        maximum = None
+        for _, ask, bid in quotes:
+            if minimum_prior_ask is not None:
+                gain = bid - minimum_prior_ask
+                maximum = gain if maximum is None else max(maximum, gain)
+            minimum_prior_ask = ask if minimum_prior_ask is None else min(minimum_prior_ask, ask)
+        best_gross_gain[ticker + ":" + side] = round(maximum, 3) if maximum is not None else None
         # Earliest ask for every candidate entry. Later bids only: no lookahead.
         for index, (entry_at, entry_ask, _) in enumerate(quotes):
             for exit_at, _, exit_bid in quotes[index + 1:]:
@@ -65,6 +75,7 @@ def analyze(rows):
         "contract_sides": len(groups),
         "valid_side_quotes": observations,
         "api_errors": errors,
+        "best_observed_gross_gain_cents_by_contract_side": best_gross_gain,
         "entry_points_with_later_bid_gain_over_20c": len(opportunities),
         "opportunities": opportunities[:100],
         "limitations": "Observed ask/bid only; no order fills, fees, liquidity guarantees or advance predictions. Overlapping opportunities are not independent trades.",
