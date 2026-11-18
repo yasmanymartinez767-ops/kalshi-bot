@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, breakdown
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, breakdown, daily_report
 
 
 def download_closed_minutes(minutes=4320):
@@ -49,5 +49,6 @@ if __name__ == "__main__":
         "observed_end_utc": datetime.fromtimestamp(candles[-1]["time"] + 60, timezone.utc).isoformat() if candles else None,
         "horizons": summarize(results),
         "exploratory_breakdown": breakdown(results),
+        "daily_utc": daily_report(results),
         "warning": "Overlapping in-sample signals; exploratory only, not out-of-sample accuracy or Kalshi returns",
     }, indent=2))
