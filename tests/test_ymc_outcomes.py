@@ -77,3 +77,14 @@ def test_quarter_hour_report_only_uses_15m_boundary():
     assert report["summary"]["signals"] == 1
     assert report["daily_utc"]["2026-11-18"][15]["signals"] == 1
     assert aligned_quarter_hour_report([])["aligned_decisions"] == 0
+
+
+def test_momentum_baseline_is_reported_from_past_only():
+    rows = evaluate_history(sample())
+    assert rows
+    assert all(r["momentum_baseline_direction"] in ("ALCISTA", "BAJISTA", "ESPERAR") for r in rows)
+    report = summarize(rows)
+    for stats in report.values():
+        assert stats["non_overlapping_momentum_baseline_scored"] <= stats["non_overlapping_scored"]
+        rate = stats["non_overlapping_momentum_baseline_hit_rate"]
+        assert rate is None or 0 <= rate <= 1
