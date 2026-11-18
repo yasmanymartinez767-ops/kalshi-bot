@@ -64,6 +64,7 @@ class OpportunityTests(unittest.TestCase):
         exit_quote["close_time"] = "2026-11-18T22:01:00Z"
         result = analyze([entry, exit_quote])
         self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 0)
+        self.assertEqual(result["expired_quotes_excluded"], 1)
 
     def test_quotes_before_expiry_still_count(self):
         entry = quote("00")
