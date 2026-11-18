@@ -50,7 +50,7 @@ jobs:
       - name: Probar motor YMC y validacion de velas cerradas
         run: |
           python -m pip install pytest
-          python -m pytest -q tests/test_ymc_signal.py
+          python -m pytest -q tests/test_ymc_signal.py tests/test_ymc_outcomes.py
 
       - name: Instalar Node.js
         uses: actions/setup-node@v4
