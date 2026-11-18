@@ -7,8 +7,10 @@ on:
   push:
     paths:
       - '.github/workflows/ymc-capture-quotes.yml'
-      - 'scripts/ymc_analyze_kalshi_quotes.py'
-      - 'tests/test_ymc_quote_analysis.py'
+
+concurrency:
+  group: ymc-live-capture
+  cancel-in-progress: false
 
 permissions:
   contents: read
