@@ -1,5 +1,6 @@
 """Retrospective bid-drop alert evaluation; never uses future data to trigger alerts."""
 from collections import defaultdict
+from datetime import datetime, timezone
 
 
 def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
@@ -17,6 +18,15 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
     for row in snapshots:
         try:
             ticker, at, bid = row["ticker"], int(row["time"]), float(row[key])
+            close = row.get("close_time")
+            if isinstance(close, str):
+                close = int(datetime.fromisoformat(close.replace("Z", "+00:00")).timestamp())
+            elif isinstance(close, datetime):
+                close = int((close if close.tzinfo else close.replace(tzinfo=timezone.utc)).timestamp())
+            elif close is not None:
+                close = int(close)
+            if close is not None and at >= close:
+                continue
         except (KeyError, TypeError, ValueError):
             continue
         if ticker and 0 < bid <= 1:
@@ -34,7 +44,10 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
             break
         if trigger is None:
             continue
+        # Require a nearby observation; a quote many minutes later is not a 60s outcome.
         future = next((r for r in rows if r[0] >= trigger[0] + horizon_seconds), None)
+        if future is not None and future[0] > trigger[0] + horizon_seconds + 30:
+            future = None
         if future is None:
             results.append({"ticker": ticker, "outcome": "UNRESOLVED"})
             continue
