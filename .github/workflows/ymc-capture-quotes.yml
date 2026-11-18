@@ -2,6 +2,9 @@ name: Capturar cotizaciones reales Kalshi BTC 15m
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ymc-capture-quotes.yml'
 
 permissions:
   contents: read
