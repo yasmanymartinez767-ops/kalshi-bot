@@ -1,4 +1,4 @@
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check, aligned_quarter_hour_report, wilson_95_interval
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check, aligned_quarter_hour_report, wilson_95_interval, quarter_hour_coverage
 
 
 def sample(n=65):
@@ -96,3 +96,10 @@ def test_wilson_uncertainty_bounds():
         interval = wilson_95_interval(wins, total)
         assert 0 <= interval["lower"] <= wins / total <= interval["upper"] <= 1
     assert wilson_95_interval(5, 100)["upper"] - wilson_95_interval(5, 100)["lower"] < wilson_95_interval(1, 20)["upper"] - wilson_95_interval(1, 20)["lower"]
+
+
+def test_quarter_hour_coverage_includes_wait_slots():
+    assert quarter_hour_coverage([], [])["directional_coverage"] is None
+    coverage = quarter_hour_coverage(sample(), [])
+    assert coverage["eligible_slots"] == coverage["directional_slots"] + coverage["wait_slots"]
+    assert coverage["directional_coverage"] is None or 0 <= coverage["directional_coverage"] <= 1
