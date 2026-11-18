@@ -159,16 +159,18 @@ export function BtcMarketView() {
     refetchInterval: POLL_MS,
   })
 
-  const { data: kalshiCandles } = useQuery({
+  const { data: kalshiCandles, isError: kalshiCandlesError, error: kalshiCandlesFailure } = useQuery({
     queryKey: ['btc-kalshi-candles', historyRange],
     queryFn: () => fetchKalshiCandles(historyRange),
-    refetchInterval: POLL_MS,
+    refetchInterval: 15000,
+    retry: 1,
   })
 
-  const { data: snapshots } = useQuery({
+  const { data: snapshots, isError: snapshotsError, error: snapshotsFailure } = useQuery({
     queryKey: ['btc-history', historyRange],
     queryFn: () => fetchBtcHistory(historyRange),
-    refetchInterval: POLL_MS,
+    refetchInterval: 15000,
+    retry: 1,
   })
 
   const { data: marketData } = useQuery({
@@ -205,9 +207,16 @@ export function BtcMarketView() {
         </ToolbarButton>
         <div className="flex-1" />
         <span className="text-[10px] text-[#9598a1]">
-          1Hz live · {snapshots?.length ?? 0} orderbook points · {kalshiCandles?.length ?? 0} Kalshi candles loaded
+          Kalshi historial · {snapshotsError ? 'Error puntos' : `${snapshots?.length ?? 0} puntos`} · {kalshiCandlesError ? 'Error velas' : `${kalshiCandles?.length ?? 0} velas`}
         </span>
       </div>
+
+      {(snapshotsError || kalshiCandlesError) && (
+        <div className="shrink-0 px-3 py-1 text-[11px] text-[#ef9a9a]" role="status">
+          Historial Kalshi: {snapshotsError ? `puntos: ${snapshotsFailure instanceof Error ? snapshotsFailure.message : 'error de red'}` : ''}
+          {kalshiCandlesError ? ` velas: ${kalshiCandlesFailure instanceof Error ? kalshiCandlesFailure.message : 'error de red'}` : ''}
+        </div>
+      )}
 
       {/* 2x2 grid: all four charts share the same filters, theme, pattern markers, and view-state preservation */}
       <div className="shrink-0 grid grid-cols-1 auto-rows-[300px] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:grid-cols-2 lg:grid-rows-2 lg:auto-rows-auto">
