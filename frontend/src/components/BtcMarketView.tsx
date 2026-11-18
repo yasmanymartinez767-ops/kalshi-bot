@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, fetchYmcTechnical, type BtcInterval, type BtcLookback } from '../api'
 
@@ -27,6 +27,7 @@ function YmcHorizonScale({ valid }: { valid: boolean }) {
 function EarlyExitRadar() {
   const [side, setSide] = useState<'YES' | 'NO'>('YES')
   const [entryCents, setEntryCents] = useState('')
+  const [bidHistory, setBidHistory] = useState<{ ticker: string; side: string; bid: number; at: number }[]>([])
   const { data, isError, dataUpdatedAt } = useQuery({
     queryKey: ['btc-market'], queryFn: fetchBtcMarket, refetchInterval: 1000,
   })
@@ -41,9 +42,22 @@ function EarlyExitRadar() {
     Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > 0 && bid <= ask && ask <= 1
   const entry = entryCents.trim() === '' ? null : Number(entryCents)
   const entryValid = entry !== null && Number.isFinite(entry) && entry > 0 && entry < 100
+  useEffect(() => {
+    if (!quoted || !market || bid === undefined) return
+    const at = Date.now()
+    setBidHistory(previous => {
+      const recent = previous.filter(p => p.ticker === market.ticker && p.side === side && at - p.at <= 120000)
+      if (recent.length && at - recent[recent.length - 1].at < 5000) return recent
+      return [...recent, { ticker: market.ticker, side, bid, at }].slice(-24)
+    })
+  }, [quoted, market?.ticker, side, bid, dataUpdatedAt])
+  const history = bidHistory.filter(p => p.ticker === market?.ticker && p.side === side && Date.now() - p.at <= 120000)
+  const oldest = history[0]
+  const bidChangeCents = quoted && oldest && Date.now() - oldest.at >= 30000 ? (bid - oldest.bid) * 100 : null
   const gross = quoted && entryValid ? bid * 100 - entry : null
   // Watch-only: a profitable bid is not a prediction that it will reverse.
   const exitWatch = gross === null ? 'SIN DATOS SUFICIENTES' :
+    gross > 0 && bidChangeCents !== null && bidChangeCents <= -3 ? 'ATENCIÓN · BID RETROCEDE 3¢ O MÁS' :
     gross > 0 && timeLeftMs <= 120000 ? 'BENEFICIO DISPONIBLE · VENCIMIENTO PRÓXIMO' :
     gross > 0 ? 'BENEFICIO DISPONIBLE · VIGILAR BID' :
     gross < 0 ? 'POR DEBAJO DE ENTRADA' : 'SIN BENEFICIO BRUTO'
@@ -65,6 +79,7 @@ function EarlyExitRadar() {
         <span>Tiempo restante: <strong>{active ? timeRemaining(market?.close_time) : '—'}</strong></span>
         <span>Venta al bid: <strong className="text-[#e0edff]">{quoted ? (bid * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Spread: <strong>{quoted ? ((ask - bid) * 100).toFixed(1) + '¢' : '—'}</strong></span>
+        <span>Movimiento bid (hasta 2m): <strong className={bidChangeCents !== null && bidChangeCents < 0 ? 'text-[#ef5350]' : 'text-[#9db4ca]'}>{bidChangeCents === null ? 'RECOPILANDO' : (bidChangeCents > 0 ? '+' : '') + bidChangeCents.toFixed(1) + '¢'}</strong></span>
         <span>Resultado bruto: <strong className={gross === null ? 'text-[#9db4ca]' : gross >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}>{gross === null ? '—' : (gross >= 0 ? '+' : '') + gross.toFixed(1) + '¢/contrato'}</strong></span>
       </div>
       <div className={`mt-1 text-[10px] font-bold ${gross !== null && gross > 0 ? 'text-[#e4b95b]' : 'text-[#9db4ca]'}`} role="status">Vigilancia de salida: {exitWatch}</div>
