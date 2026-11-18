@@ -33,6 +33,14 @@ def analyze(rows):
             continue
         if not ticker or at.tzinfo is None:
             continue
+        close_time = row.get("close_time")
+        if close_time:
+            try:
+                expiry = datetime.fromisoformat(str(close_time).replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                continue
+            if expiry.tzinfo is None or at >= expiry:
+                continue
         for side in ("yes", "no"):
             ask = parse_price(row.get(side + "_ask"))
             bid = parse_price(row.get(side + "_bid"))
