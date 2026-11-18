@@ -42,6 +42,8 @@ def analyze(rows):
     opportunities = []
     observations = 0
     best_gross_gain = {}
+    first_opportunity_by_contract_side = {}
+    contract_side_summaries = []
     for (ticker, side), quotes in sorted(groups.items()):
         quotes.sort(key=lambda q: q[0])
         observations += len(quotes)
@@ -53,7 +55,12 @@ def analyze(rows):
                 gain = bid - minimum_prior_ask
                 maximum = gain if maximum is None else max(maximum, gain)
             minimum_prior_ask = ask if minimum_prior_ask is None else min(minimum_prior_ask, ask)
-        best_gross_gain[ticker + ":" + side] = round(maximum, 3) if maximum is not None else None
+        key = ticker + ":" + side
+        best_gross_gain[key] = round(maximum, 3) if maximum is not None else None
+        contract_side_summaries.append({"ticker": ticker, "side": side,
+            "valid_quotes": len(quotes), "first_quote_utc": quotes[0][0].isoformat() if quotes else None,
+            "last_quote_utc": quotes[-1][0].isoformat() if quotes else None,
+            "max_observed_gross_gain_cents": best_gross_gain[key]})
         # Earliest ask for every candidate entry. Later bids only: no lookahead.
         for index, (entry_at, entry_ask, _) in enumerate(quotes):
             for exit_at, _, exit_bid in quotes[index + 1:]:
@@ -61,7 +68,7 @@ def analyze(rows):
                     continue
                 gain = round(exit_bid - entry_ask, 6)
                 if gain > TARGET_CENTS + 1e-8:
-                    opportunities.append({
+                    opportunity = {
                         "ticker": ticker, "side": side,
                         "entry_observed_at_utc": entry_at.isoformat(),
                         "exit_observed_at_utc": exit_at.isoformat(),
@@ -69,7 +76,10 @@ def analyze(rows):
                         "later_bid_cents": round(exit_bid, 3),
                         "gross_gain_cents": round(gain, 3),
                         "hypothetical_only": True,
-                    })
+                        "elapsed_seconds": round((exit_at - entry_at).total_seconds(), 3),
+                    }
+                    opportunities.append(opportunity)
+                    first_opportunity_by_contract_side.setdefault(key, opportunity)
                     break
     return {
         "contract_sides": len(groups),
@@ -78,6 +88,9 @@ def analyze(rows):
         "best_observed_gross_gain_cents_by_contract_side": best_gross_gain,
         "entry_points_with_later_bid_gain_over_20c": len(opportunities),
         "opportunities": opportunities[:100],
+        "contract_sides_with_at_least_one_over_20c_opportunity": len(first_opportunity_by_contract_side),
+        "first_opportunity_by_contract_side": list(first_opportunity_by_contract_side.values()),
+        "contract_side_summaries": contract_side_summaries,
         "limitations": "Observed ask/bid only; no order fills, fees, liquidity guarantees or advance predictions. Overlapping opportunities are not independent trades.",
         "prediction_accuracy_validated": False,
     }
