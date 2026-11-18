@@ -57,6 +57,22 @@ class OpportunityTests(unittest.TestCase):
         self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 1)
         self.assertEqual(result["entry_points_10_to_60c_with_later_gain_over_20c"], 0)
 
+    def test_quotes_at_expiry_cannot_trigger_exit(self):
+        entry = quote("00")
+        entry["close_time"] = "2026-11-18T22:01:00Z"
+        exit_quote = quote("01", yes_ask="0.42", yes_bid="0.41")
+        exit_quote["close_time"] = "2026-11-18T22:01:00Z"
+        result = analyze([entry, exit_quote])
+        self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 0)
+
+    def test_quotes_before_expiry_still_count(self):
+        entry = quote("00")
+        entry["close_time"] = "2026-11-18T22:02:00Z"
+        exit_quote = quote("01", yes_ask="0.42", yes_bid="0.41")
+        exit_quote["close_time"] = "2026-11-18T22:02:00Z"
+        result = analyze([entry, exit_quote])
+        self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 1)
+
     def test_yes_no_are_separate(self):
         result = analyze([quote("00", yes_ask="0.20", yes_bid="0.19", no_ask="0.20", no_bid="0.19"),
                           quote("01", yes_ask="0.42", yes_bid="0.41", no_ask="0.42", no_bid="0.41")])
