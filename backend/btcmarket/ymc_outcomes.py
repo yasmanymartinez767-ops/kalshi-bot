@@ -182,7 +182,12 @@ def aligned_quarter_hour_report(results):
         if instant.minute % 15 == 0:
             selected.append(row)
     by_day = daily_report(selected)
+    by_votes = {}
+    for vote in sorted({r.get("votes") for r in selected if r.get("votes") is not None}):
+        vote_rows = [r for r in selected if r.get("votes") == vote]
+        by_votes[str(vote)] = summarize(vote_rows).get(15, {})
     return {"aligned_decisions": len(selected), "summary": summarize(selected).get(15, {}),
+            "by_votes_exploratory": by_votes,
             "daily_utc": by_day,
             "note": "UTC quarter-hour Coinbase spot only; not a Kalshi backtest"}
 
