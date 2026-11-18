@@ -1,9 +1,36 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, type BtcInterval, type BtcLookback } from '../api'
+import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, fetchYmcTechnical, type BtcInterval, type BtcLookback } from '../api'
 
 import { BtcCandlestickChart } from './BtcCandlestickChart'
 import { BtcProbabilityChart } from './BtcProbabilityChart'
+
+type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string }
+
+function YmcSignalPanel() {
+  const { data, isError } = useQuery<YmcSignal>({
+    queryKey: ['ymc-technical'],
+    queryFn: fetchYmcTechnical,
+    refetchInterval: 10000,
+    retry: 1,
+  })
+  const valid = !isError && data?.validated === true && Date.now() - Date.parse(data.as_of_utc) <= 150000
+  const direction = valid ? data!.direction : 'ESPERAR'
+  return (
+    <div className="shrink-0 border-b border-[#254158] bg-[#041321] px-3 py-2 text-[11px]" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        <span className="font-bold text-[#e4b95b]">♛ YMC · IA TÉCNICA</span>
+        <span className={direction === 'ALCISTA' ? 'text-[#26a69a] font-bold' : direction === 'BAJISTA' ? 'text-[#ef5350] font-bold' : 'text-[#9db4ca] font-bold'}>{direction}</span>
+        <span>Votos: {valid ? data!.votes : '—'}/5</span>
+        <span>EMA 9/21: {valid ? data!.ema9?.toFixed(2) : '—'} / {valid ? data!.ema21?.toFixed(2) : '—'}</span>
+        <span>RSI 14: {valid ? data!.rsi14?.toFixed(1) : '—'}</span>
+        <span>MACD (12,26,9): {valid ? data!.macd_hist?.toFixed(3) : '—'}</span>
+        <span className="text-[#9db4ca]">Coinbase 1m · {valid ? data!.as_of_utc.slice(11, 19) + ' UTC' : (isError ? 'SIN CONEXIÓN' : data?.reason ?? 'CARGANDO')}</span>
+      </div>
+      <div className="text-[10px] text-[#9598a1] mt-1">Señal técnica informativa, no probabilidad ni recomendación de entrada. Coinbase spot ≠ referencia de liquidación Kalshi.</div>
+    </div>
+  )
+}
 
 const POLL_MS = 1000 // 1Hz, per spec: orderbook, BTC price, and candles all refresh every second
 
@@ -146,7 +173,7 @@ export function BtcMarketView() {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#071626] text-[#e0edff]" style={{ fontFamily: "-apple-system, 'Trebuchet MS', Roboto, Ubuntu, sans-serif" }}>
-      <MarketHeader />
+      <MarketHeader />\n      <YmcSignalPanel />
 
       {/* toolbar: TradingView-style filter row */}
       <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-1.5 flex items-center gap-4 flex-wrap">

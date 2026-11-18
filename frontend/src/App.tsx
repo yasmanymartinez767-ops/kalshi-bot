@@ -338,16 +338,6 @@ function App() {
             >
               Whales
             </button>
-            <button
-              onClick={() => setView('btc')}
-              className={`px-2.5 py-1 text-[9px] uppercase tracking-wider transition-colors border-l border-neutral-800 ${
-                view === 'btc'
-                  ? 'bg-neutral-800 text-orange-400'
-                  : 'text-neutral-600 hover:text-neutral-400'
-              }`}
-            >
-              BTC 15M
-            </button>
           </div>
 
           {view === 'dashboard' && (
@@ -390,12 +380,6 @@ function App() {
         </div>
       )}
 
-      {/* ── BTC 15M VIEW ── */}
-      {view === 'btc' && (
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <BtcMarketView />
-        </div>
-      )}
 
       {/* ── MAIN GRID ── */}
       {/* Left 280px | Center flex-1 | Right 300px */}
