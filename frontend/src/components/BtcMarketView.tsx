@@ -27,6 +27,8 @@ function YmcHorizonScale({ valid }: { valid: boolean }) {
 function EarlyExitRadar() {
   const [side, setSide] = useState<'YES' | 'NO'>('YES')
   const [entryCents, setEntryCents] = useState('')
+  const [entryTicker, setEntryTicker] = useState('')
+  const [entrySide, setEntrySide] = useState<'YES' | 'NO'>('YES')
   const [targetGainCents, setTargetGainCents] = useState<20 | 25 | 30>(20)
   const [bidHistory, setBidHistory] = useState<{ ticker: string; side: string; bid: number; at: number }[]>([])
   const { data, isError, dataUpdatedAt } = useQuery({
@@ -42,7 +44,9 @@ function EarlyExitRadar() {
   const quoted = fresh && active && typeof bid === 'number' && typeof ask === 'number' &&
     Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > 0 && bid <= ask && ask <= 1
   const entry = entryCents.trim() === '' ? null : Number(entryCents)
-  const entryValid = entry !== null && Number.isFinite(entry) && entry > 0 && entry < 100
+  // Never apply a manually entered position to a different contract or YES/NO side.
+  const entryValid = entry !== null && Number.isFinite(entry) && entry > 0 && entry < 100 &&
+    entryTicker === market?.ticker && entrySide === side
   useEffect(() => {
     if (!quoted || !market || bid === undefined) return
     const at = Date.now()
@@ -85,13 +89,14 @@ function EarlyExitRadar() {
           </select>
         </label>
         <label className="text-[#9db4ca]">Entrada (¢)
-          <input aria-label="Precio de entrada en centavos" type="number" min="1" max="99" step="0.1" value={entryCents} onChange={e => setEntryCents(e.target.value)} placeholder="—" className="ml-1 w-16 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]" />
+          <input aria-label="Precio de entrada en centavos" type="number" min="1" max="99" step="0.1" value={entryCents} onChange={e => { setEntryCents(e.target.value); setEntryTicker(market?.ticker ?? ''); setEntrySide(side) }} placeholder="—" className="ml-1 w-16 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]" />
         </label>
         <label className="text-[#9db4ca]">Subida mínima
           <select aria-label="Ganancia objetivo en centavos" value={targetGainCents} onChange={e => setTargetGainCents(Number(e.target.value) as 20 | 25 | 30)} className="ml-1 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]">
             <option value={20}>Más de 20¢</option><option value={25}>Más de 25¢</option><option value={30}>Más de 30¢</option>
           </select>
         </label>
+        {entryCents.trim() !== '' && !entryValid && <span className="text-[#e4b95b]">Entrada no válida para este contrato/lado: vuelve a introducirla</span>}
         <span>Tiempo restante: <strong>{active ? timeRemaining(market?.close_time) : '—'}</strong></span>
         <span>Venta al bid: <strong className="text-[#e0edff]">{quoted ? (bid * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Spread: <strong>{quoted ? ((ask - bid) * 100).toFixed(1) + '¢' : '—'}</strong></span>
