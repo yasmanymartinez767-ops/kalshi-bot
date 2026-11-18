@@ -201,3 +201,16 @@ def test_early_reversal_last_day_is_separated():
     assert result["holdout_date_utc"] == "2026-11-18"
     assert result["reference"]["POSIBLE_AGOTAMIENTO_ALCISTA"]["match_rate"] == 1
     assert result["holdout"]["POSIBLE_AGOTAMIENTO_ALCISTA"]["match_rate"] == 0
+
+
+def test_exhaustion_warning_breakdown_respects_original_vote_direction():
+    from backend.btcmarket.ymc_outcomes import early_watch_diagnostic
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "direction": "ALCISTA", "correct": False, "actual_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "direction": "BAJISTA", "correct": True, "actual_direction": "BAJISTA"},
+    ]
+    groups = early_watch_diagnostic(rows)["reversal_by_original_signal_exploratory"]["POSIBLE_AGOTAMIENTO_ALCISTA"]
+    assert groups["ALCISTA"]["scored"] == 1
+    assert groups["BAJISTA"]["scored"] == 1
+    assert groups["ALCISTA"]["reversals"] == 1
+    assert groups["BAJISTA"]["reversals"] == 1
