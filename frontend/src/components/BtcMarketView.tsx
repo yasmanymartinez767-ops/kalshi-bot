@@ -42,6 +42,11 @@ function EarlyExitRadar() {
   const entry = entryCents.trim() === '' ? null : Number(entryCents)
   const entryValid = entry !== null && Number.isFinite(entry) && entry > 0 && entry < 100
   const gross = quoted && entryValid ? bid * 100 - entry : null
+  // Watch-only: a profitable bid is not a prediction that it will reverse.
+  const exitWatch = gross === null ? 'SIN DATOS SUFICIENTES' :
+    gross > 0 && timeLeftMs <= 120000 ? 'BENEFICIO DISPONIBLE · VENCIMIENTO PRÓXIMO' :
+    gross > 0 ? 'BENEFICIO DISPONIBLE · VIGILAR BID' :
+    gross < 0 ? 'POR DEBAJO DE ENTRADA' : 'SIN BENEFICIO BRUTO'
   return (
     <div className="mt-2 rounded border border-[#254158] bg-[#071626] px-2 py-2" aria-label="Radar de salida anticipada">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -62,6 +67,7 @@ function EarlyExitRadar() {
         <span>Spread: <strong>{quoted ? ((ask - bid) * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Resultado bruto: <strong className={gross === null ? 'text-[#9db4ca]' : gross >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}>{gross === null ? '—' : (gross >= 0 ? '+' : '') + gross.toFixed(1) + '¢/contrato'}</strong></span>
       </div>
+      <div className={`mt-1 text-[10px] font-bold ${gross !== null && gross > 0 ? 'text-[#e4b95b]' : 'text-[#9db4ca]'}`} role="status">Vigilancia de salida: {exitWatch}</div>
       <div className="mt-1 text-[10px] text-[#9598a1]">Estimación usando el mejor bid, sin comisiones, deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
     </div>
   )
