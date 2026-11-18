@@ -146,3 +146,20 @@ def forward_day_check(results):
         "forward_day_count": max(0, len(dates) - 1),
         "note": "Frozen-rule forward chronological diagnostic; not true live walk-forward training or independent Kalshi validation",
     }
+
+
+def aligned_quarter_hour_report(results):
+    """Evaluate 15m spot predictions made just after UTC :00/:15/:30/:45.
+
+    This is an alignment diagnostic, NOT a replay of Kalshi order books,
+    entry fills, contract strike, fees, or contract settlement.
+    """
+    selected = []
+    for row in results:
+        if row.get("horizon_minutes") != 15 or not row.get("decision_utc"):
+            continue
+        instant = datetime.fromisoformat(row["decision_utc"])
+        if instant.minute % 15 == 0:
+            selected.append(row)
+    return {"aligned_decisions": len(selected), "summary": summarize(selected).get(15, {}),
+            "note": "UTC quarter-hour Coinbase spot only; not a Kalshi backtest"}
