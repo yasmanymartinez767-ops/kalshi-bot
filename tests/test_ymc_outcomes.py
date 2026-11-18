@@ -40,3 +40,5 @@ def test_non_overlapping_signal_counts():
     for horizon in (10, 15):
         assert summary[horizon]["non_overlapping_signals"] <= summary[horizon]["signals"]
         assert summary[horizon]["non_overlapping_scored"] <= summary[horizon]["scored"]
+        assert 0 <= summary[horizon]["non_overlapping_always_up_baseline"] <= 1
+        assert 0 <= summary[horizon]["non_overlapping_always_down_baseline"] <= 1
