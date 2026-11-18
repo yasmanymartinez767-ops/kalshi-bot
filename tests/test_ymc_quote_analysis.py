@@ -1,6 +1,6 @@
 """Regression tests for forward-only observed Kalshi exit research."""
 import unittest
-from scripts.ymc_analyze_kalshi_quotes import analyze
+from scripts.ymc_analyze_kalshi_quotes import analyze, parse_price
 
 
 def quote(t, ticker="KXBTC15M-TEST", yes_ask="0.20", yes_bid="0.19", no_ask="0.81", no_bid="0.80"):
@@ -73,6 +73,12 @@ class OpportunityTests(unittest.TestCase):
         exit_quote["close_time"] = "2026-11-18T22:02:00Z"
         result = analyze([entry, exit_quote])
         self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 1)
+
+    def test_nonfinite_prices_rejected(self):
+        for value in ("NaN", "Infinity", "-Infinity", float("nan"), float("inf")):
+            self.assertIsNone(parse_price(value))
+        result = analyze([quote("00", yes_ask="NaN"), quote("01", yes_ask="0.42", yes_bid="0.41")])
+        self.assertEqual(result["entry_points_with_later_bid_gain_over_20c"], 0)
 
     def test_yes_no_are_separate(self):
         result = analyze([quote("00", yes_ask="0.20", yes_bid="0.19", no_ask="0.20", no_bid="0.19"),
