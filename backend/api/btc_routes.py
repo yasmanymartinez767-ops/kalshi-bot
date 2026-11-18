@@ -84,3 +84,20 @@ async def get_signal():
     if not signal:
         return {"signal": None}
     return {"signal": asdict(signal)}
+
+
+@router.get("/ymc-technical")
+async def get_ymc_technical():
+    """Coinbase BTC-USD technical votes from closed 1m candles; not a Kalshi settlement forecast."""
+    from datetime import datetime, timezone
+    from backend.btcmarket.ymc_signal import evaluate
+    await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
+    candles = candles_mod.get_cached_candles(60, timedelta(hours=3))
+    now = datetime.now(timezone.utc).timestamp()
+    result = evaluate(candles, now=now)
+    result["source"] = "Coinbase BTC-USD"
+    result["timeframe"] = "1m"
+    result["indicators"] = {"ema_fast": 9, "ema_slow": 21, "rsi": 14,
+                            "macd_fast": 12, "macd_slow": 26, "macd_signal": 9}
+    result["settlement_price_warning"] = "Coinbase spot is not Kalshi's settlement reference"
+    return result
