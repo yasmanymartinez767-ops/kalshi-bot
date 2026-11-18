@@ -185,3 +185,32 @@ def aligned_quarter_hour_report(results):
     return {"aligned_decisions": len(selected), "summary": summarize(selected).get(15, {}),
             "daily_utc": by_day,
             "note": "UTC quarter-hour Coinbase spot only; not a Kalshi backtest"}
+
+
+def quarter_hour_coverage(candles, results):
+    """Count eligible quarter-hour decision slots, including WAIT/no-signal.
+
+    A slot is eligible only if its 40 closed 1m candles are contiguous and
+    pass the same data validation used for the signal. A no-signal slot is
+    not silently excluded from coverage statistics.
+    """
+    if not candles:
+        return {"eligible_slots": 0, "directional_slots": 0, "wait_slots": 0, "directional_coverage": None}
+    rows = sorted(candles, key=lambda c: c["time"])
+    eligible = 0
+    directional = 0
+    for idx in range(39, len(rows)):
+        window = rows[idx - 39:idx + 1]
+        decision_time = int(window[-1]["time"]) + 61
+        if datetime.fromtimestamp(decision_time, timezone.utc).minute % 15 != 0:
+            continue
+        signal = evaluate(window, now=decision_time)
+        if not signal["validated"]:
+            continue
+        eligible += 1
+        if signal["direction"] in ("ALCISTA", "BAJISTA"):
+            directional += 1
+    return {"eligible_slots": eligible, "directional_slots": directional,
+            "wait_slots": eligible - directional,
+            "directional_coverage": directional / eligible if eligible else None,
+            "note": "Data-valid decision coverage; future outcomes may be unavailable near end of history"}
