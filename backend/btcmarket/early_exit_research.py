@@ -35,8 +35,18 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
         if ticker and 0 < bid <= 1:
             grouped[ticker].append((at, bid))
     results = []
+    baseline_results = []
     for ticker, rows in grouped.items():
         rows.sort()
+        # Baseline: fixed observation at the third quote, independent of any alert.
+        # Compare the same 60-second outcome definition, only before expiry.
+        if len(rows) >= 3:
+            base = rows[2]
+            expiry = expiry_by_ticker.get(ticker)
+            if expiry is None or base[0] + horizon_seconds < expiry:
+                next_base = next((r for r in rows if r[0] >= base[0] + horizon_seconds), None)
+                if next_base and next_base[0] <= base[0] + horizon_seconds + 30:
+                    baseline_results.append(next_base[1] < base[1])
         trigger = None
         for i in range(2, len(rows)):
             a, b, c = rows[i - 2:i + 1]
@@ -64,9 +74,17 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
                         "future_bid_change_cents": delta_cents})
     resolved = [r for r in results if r["outcome"] != "UNRESOLVED"]
     fell = sum(r["outcome"] == "FELL" for r in resolved)
+    baseline_n = len(baseline_results)
+    baseline_fell = sum(baseline_results)
     return {"side": side, "horizon_seconds": horizon_seconds,
             "alerts": len(results), "resolved": len(resolved), "unresolved": len(results) - len(resolved),
             "further_declines": fell, "false_alarms": len(resolved) - fell,
             "decline_rate": fell / len(resolved) if resolved else None,
+            "baseline_third_quote": {
+                "resolved": baseline_n,
+                "further_declines": baseline_fell,
+                "decline_rate": baseline_fell / baseline_n if baseline_n else None,
+                "note": "Unmatched descriptive baseline, not causal evidence of signal improvement.",
+            },
             "rows": results,
             "note": "Exploratory historical diagnostic, not a validated trading edge; excludes fees, spread changes and execution."}
