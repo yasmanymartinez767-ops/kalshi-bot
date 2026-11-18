@@ -177,3 +177,15 @@ def test_early_watch_diagnostic_groups_aligned_rows():
     assert report["total_aligned_signals"] == 2
     assert report["by_early_watch"]["POSIBLE_AGOTAMIENTO_ALCISTA"]["signals"] == 1
     assert sum(x["signals"] for x in report["by_early_watch"].values()) == 2
+
+
+def test_early_reversal_hypothesis_counts_spot_direction_not_ymc_correctness():
+    from backend.btcmarket.ymc_outcomes import early_watch_diagnostic
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "correct": False, "actual_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_BAJISTA", "correct": False, "actual_direction": "ALCISTA"},
+    ]
+    report = early_watch_diagnostic(rows)["reversal_hypotheses_exploratory"]
+    assert report["POSIBLE_AGOTAMIENTO_ALCISTA"]["match_rate"] == 1
+    assert report["POSIBLE_AGOTAMIENTO_BAJISTA"]["matches"] == 1
+    assert report["POSIBLE_AGOTAMIENTO_ALCISTA"]["wilson_95"]["upper"] == 1
