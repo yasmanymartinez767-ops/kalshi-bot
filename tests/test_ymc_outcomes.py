@@ -214,3 +214,17 @@ def test_exhaustion_warning_breakdown_respects_original_vote_direction():
     assert groups["BAJISTA"]["scored"] == 1
     assert groups["ALCISTA"]["reversals"] == 1
     assert groups["BAJISTA"]["reversals"] == 1
+
+
+def test_reversal_warning_is_compared_to_same_original_direction():
+    from backend.btcmarket.ymc_outcomes import early_watch_diagnostic
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "early_watch": "POSIBLE_AGOTAMIENTO_ALCISTA", "direction": "ALCISTA", "correct": False, "actual_direction": "BAJISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "early_watch": "NINGUNA", "direction": "ALCISTA", "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:30:01+00:00", "horizon_minutes": 15, "early_watch": "NINGUNA", "direction": "BAJISTA", "correct": True, "actual_direction": "BAJISTA"},
+    ]
+    report = early_watch_diagnostic(rows)["reversal_vs_no_warning_same_direction"]["POSIBLE_AGOTAMIENTO_ALCISTA"]
+    assert report["warning"]["scored"] == 1
+    assert report["warning"]["reversal_rate"] == 1
+    assert report["no_warning"]["scored"] == 1
+    assert report["no_warning"]["reversal_rate"] == 0
