@@ -34,7 +34,7 @@ export function detectPatterns(candles: BtcCandle[]): PatternMatch[] {
     const upperWick = c.high - Math.max(c.open, c.close)
     const lowerWick = Math.min(c.open, c.close) - c.low
     const bullish = c.close > c.open
-    const trendUp = c.close > sma(candles, i, SMA_WINDOW)
+    const trendUp = prev.close > sma(candles, i - 1, SMA_WINDOW)
 
     // Doji: body is negligible relative to the candle's full range
     if (body <= range * 0.1) {
@@ -47,7 +47,7 @@ export function detectPatterns(candles: BtcCandle[]): PatternMatch[] {
     if (smallBody && lowerWick >= body * 2 && upperWick <= body * 0.5) {
       matches.push({
         time: c.time,
-        pattern: trendUp ? 'Shooting Star' : 'Hammer',
+        pattern: trendUp ? 'Hanging Man' : 'Hammer',
         bullish: !trendUp,
       })
       continue
@@ -55,7 +55,7 @@ export function detectPatterns(candles: BtcCandle[]): PatternMatch[] {
     if (smallBody && upperWick >= body * 2 && lowerWick <= body * 0.5) {
       matches.push({
         time: c.time,
-        pattern: trendUp ? 'Inverted Hammer' : 'Shooting Star',
+        pattern: trendUp ? 'Shooting Star' : 'Inverted Hammer',
         bullish: !trendUp,
       })
       continue
