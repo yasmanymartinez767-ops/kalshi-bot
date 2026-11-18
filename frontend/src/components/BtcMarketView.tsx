@@ -27,6 +27,7 @@ function YmcHorizonScale({ valid }: { valid: boolean }) {
 function EarlyExitRadar() {
   const [side, setSide] = useState<'YES' | 'NO'>('YES')
   const [entryCents, setEntryCents] = useState('')
+  const [targetPercent, setTargetPercent] = useState<15 | 20>(20)
   const [bidHistory, setBidHistory] = useState<{ ticker: string; side: string; bid: number; at: number }[]>([])
   const { data, isError, dataUpdatedAt } = useQuery({
     queryKey: ['btc-market'], queryFn: fetchBtcMarket, refetchInterval: 1000,
@@ -61,12 +62,15 @@ function EarlyExitRadar() {
     recentThree[1].bid > recentThree[2].bid &&
     (recentThree[0].bid - recentThree[2].bid) * 100 >= 2
   const gross = quoted && entryValid ? bid * 100 - entry : null
+  const grossReturnPercent = gross !== null && entry !== null ? gross / entry * 100 : null
+  const targetReached = grossReturnPercent !== null && grossReturnPercent >= targetPercent
   // Watch-only: a profitable bid is not a prediction that it will reverse.
   const exitWatch = gross === null ? 'SIN DATOS SUFICIENTES' :
-    gross > 0 && persistentDrop ? 'ATENCIÓN · 3 CAÍDAS CONSECUTIVAS DEL BID' :
-    gross > 0 && bidChangeCents !== null && bidChangeCents <= -3 ? 'ATENCIÓN · BID RETROCEDE 3¢ O MÁS' :
-    gross > 0 && timeLeftMs <= 120000 ? 'BENEFICIO DISPONIBLE · VENCIMIENTO PRÓXIMO' :
-    gross > 0 ? 'BENEFICIO DISPONIBLE · VIGILAR BID' :
+    targetReached && persistentDrop ? 'ATENCIÓN · 3 CAÍDAS CONSECUTIVAS DEL BID' :
+    targetReached && bidChangeCents !== null && bidChangeCents <= -3 ? 'ATENCIÓN · BID RETROCEDE 3¢ O MÁS' :
+    targetReached && timeLeftMs <= 120000 ? 'BENEFICIO DISPONIBLE · VENCIMIENTO PRÓXIMO' :
+    targetReached ? 'OBJETIVO ALCANZADO · VIGILAR BID' :
+    gross > 0 ? 'POR DEBAJO DEL OBJETIVO · ESPERAR' :
     gross < 0 ? 'POR DEBAJO DE ENTRADA' : 'SIN BENEFICIO BRUTO'
   return (
     <div className="mt-2 rounded border border-[#254158] bg-[#071626] px-2 py-2" aria-label="Radar de salida anticipada">
@@ -83,15 +87,21 @@ function EarlyExitRadar() {
         <label className="text-[#9db4ca]">Entrada (¢)
           <input aria-label="Precio de entrada en centavos" type="number" min="1" max="99" step="0.1" value={entryCents} onChange={e => setEntryCents(e.target.value)} placeholder="—" className="ml-1 w-16 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]" />
         </label>
+        <label className="text-[#9db4ca]">Objetivo bruto
+          <select aria-label="Rentabilidad objetivo" value={targetPercent} onChange={e => setTargetPercent(Number(e.target.value) as 15 | 20)} className="ml-1 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]">
+            <option value={20}>20%</option><option value={15}>15%</option>
+          </select>
+        </label>
         <span>Tiempo restante: <strong>{active ? timeRemaining(market?.close_time) : '—'}</strong></span>
         <span>Venta al bid: <strong className="text-[#e0edff]">{quoted ? (bid * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Spread: <strong>{quoted ? ((ask - bid) * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Movimiento bid (hasta 2m): <strong className={bidChangeCents !== null && bidChangeCents < 0 ? 'text-[#ef5350]' : 'text-[#9db4ca]'}>{bidChangeCents === null ? 'RECOPILANDO' : (bidChangeCents > 0 ? '+' : '') + bidChangeCents.toFixed(1) + '¢'}</strong></span>
+        <span>Rentabilidad bruta: <strong className={targetReached ? 'text-[#26a69a]' : 'text-[#9db4ca]'}>{grossReturnPercent === null ? '—' : (grossReturnPercent >= 0 ? '+' : '') + grossReturnPercent.toFixed(1) + '%'}</strong></span>
         <span>Resultado bruto: <strong className={gross === null ? 'text-[#9db4ca]' : gross >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}>{gross === null ? '—' : (gross >= 0 ? '+' : '') + gross.toFixed(1) + '¢/contrato'}</strong></span>
       </div>
-      <div className={`mt-1 text-[10px] font-bold ${gross !== null && gross > 0 ? 'text-[#e4b95b]' : 'text-[#9db4ca]'}`} role="status">Vigilancia de salida: {exitWatch}</div>
+      <div className={`mt-1 text-[10px] font-bold ${targetReached ? 'text-[#e4b95b]' : 'text-[#9db4ca]'}`} role="status">Vigilancia de salida: {exitWatch}</div>
       <div className="mt-1 text-[10px] text-[#9598a1]">Caídas consecutivas: {quoted ? (persistentDrop ? '3 muestras descendentes (≥2¢)' : 'NO CONFIRMADAS') : 'SIN DATOS'} · Solo vigilancia, no señal predictiva validada.</div>
-      <div className="mt-1 text-[10px] text-[#9598a1]">Estimación usando el mejor bid, sin comisiones, deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
+      <div className="mt-1 text-[10px] text-[#9598a1]">Objetivo de 15–20% calculado sobre el precio de entrada, antes de comisiones; no equivale a beneficio neto. Estimación usando el mejor bid, sin deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
     </div>
   )
 }
