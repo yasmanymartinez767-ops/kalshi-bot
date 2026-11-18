@@ -2,6 +2,8 @@ name: Capturar cotizaciones reales Kalshi BTC 15m
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '7 */2 * * *'
   push:
     paths:
       - '.github/workflows/ymc-capture-quotes.yml'
@@ -12,7 +14,7 @@ permissions:
 jobs:
   capturar:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
@@ -20,14 +22,14 @@ jobs:
           python-version: '3.11'
       - name: Registrar cotizaciones reales sin enviar órdenes
         env:
-          YMC_SAMPLE_DURATION_SECONDS: '180'
+          YMC_SAMPLE_DURATION_SECONDS: '960'
           YMC_SAMPLE_INTERVAL_SECONDS: '5'
         run: python scripts/ymc_capture_kalshi_quotes.py
       - name: Conservar evidencia de cotizaciones
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kalshi-btc15m-quotes
+          name: kalshi-btc15m-quotes-\${{ github.run_id }}
           path: kalshi_btc15m_live_quotes.jsonl
           if-no-files-found: warn
           retention-days: 30
