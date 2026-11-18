@@ -138,3 +138,19 @@ def test_momentum_comparison_uses_same_subset():
     assert stats["non_overlapping_momentum_baseline_hit_rate"] == 0
     assert stats["non_overlapping_edge_vs_momentum_on_same_subset"] == 1
     assert stats["best_baseline_is_hindsight_only"] is True
+
+
+def test_chronological_holdout_keeps_last_day_separate():
+    from backend.btcmarket.ymc_outcomes import chronological_holdout_report
+    rows = [
+        {"decision_utc": "2026-11-17T12:00:01+00:00", "horizon_minutes": 15, "direction": "ALCISTA", "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "direction": "BAJISTA", "correct": False, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:01:01+00:00", "horizon_minutes": 15, "direction": "ALCISTA", "correct": True, "actual_direction": "ALCISTA"},
+    ]
+    report = chronological_holdout_report(rows)
+    assert report["reference_dates_utc"] == ["2026-11-17"]
+    assert report["holdout_date_utc"] == "2026-11-18"
+    assert report["reference"]["summary"]["signals"] == 1
+    assert report["holdout"]["summary"]["signals"] == 1
+    assert report["holdout"]["by_direction"]["BAJISTA"]["signals"] == 1
+    assert chronological_holdout_report(rows[:1])["holdout"] == {}
