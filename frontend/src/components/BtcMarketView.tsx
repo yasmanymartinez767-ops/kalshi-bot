@@ -27,7 +27,7 @@ function YmcHorizonScale({ valid }: { valid: boolean }) {
 function EarlyExitRadar() {
   const [side, setSide] = useState<'YES' | 'NO'>('YES')
   const [entryCents, setEntryCents] = useState('')
-  const [targetPercent, setTargetPercent] = useState<15 | 20>(20)
+  const [targetGainCents, setTargetGainCents] = useState<20 | 25 | 30>(20)
   const [bidHistory, setBidHistory] = useState<{ ticker: string; side: string; bid: number; at: number }[]>([])
   const { data, isError, dataUpdatedAt } = useQuery({
     queryKey: ['btc-market'], queryFn: fetchBtcMarket, refetchInterval: 1000,
@@ -63,7 +63,7 @@ function EarlyExitRadar() {
     (recentThree[0].bid - recentThree[2].bid) * 100 >= 2
   const gross = quoted && entryValid ? bid * 100 - entry : null
   const grossReturnPercent = gross !== null && entry !== null ? gross / entry * 100 : null
-  const targetReached = grossReturnPercent !== null && grossReturnPercent >= targetPercent
+  const targetReached = gross !== null && gross > targetGainCents
   // Watch-only: a profitable bid is not a prediction that it will reverse.
   const exitWatch = gross === null ? 'SIN DATOS SUFICIENTES' :
     targetReached && persistentDrop ? 'ATENCIÓN · 3 CAÍDAS CONSECUTIVAS DEL BID' :
@@ -87,9 +87,9 @@ function EarlyExitRadar() {
         <label className="text-[#9db4ca]">Entrada (¢)
           <input aria-label="Precio de entrada en centavos" type="number" min="1" max="99" step="0.1" value={entryCents} onChange={e => setEntryCents(e.target.value)} placeholder="—" className="ml-1 w-16 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]" />
         </label>
-        <label className="text-[#9db4ca]">Objetivo bruto
-          <select aria-label="Rentabilidad objetivo" value={targetPercent} onChange={e => setTargetPercent(Number(e.target.value) as 15 | 20)} className="ml-1 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]">
-            <option value={20}>20%</option><option value={15}>15%</option>
+        <label className="text-[#9db4ca]">Subida mínima
+          <select aria-label="Ganancia objetivo en centavos" value={targetGainCents} onChange={e => setTargetGainCents(Number(e.target.value) as 20 | 25 | 30)} className="ml-1 rounded border border-[#254158] bg-[#041321] p-1 text-[#e0edff]">
+            <option value={20}>Más de 20¢</option><option value={25}>Más de 25¢</option><option value={30}>Más de 30¢</option>
           </select>
         </label>
         <span>Tiempo restante: <strong>{active ? timeRemaining(market?.close_time) : '—'}</strong></span>
@@ -101,7 +101,7 @@ function EarlyExitRadar() {
       </div>
       <div className={`mt-1 text-[10px] font-bold ${targetReached ? 'text-[#e4b95b]' : 'text-[#9db4ca]'}`} role="status">Vigilancia de salida: {exitWatch}</div>
       <div className="mt-1 text-[10px] text-[#9598a1]">Caídas consecutivas: {quoted ? (persistentDrop ? '3 muestras descendentes (≥2¢)' : 'NO CONFIRMADAS') : 'SIN DATOS'} · Solo vigilancia, no señal predictiva validada.</div>
-      <div className="mt-1 text-[10px] text-[#9598a1]">Objetivo de 15–20% calculado sobre el precio de entrada, antes de comisiones; no equivale a beneficio neto. Estimación usando el mejor bid, sin deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
+      <div className="mt-1 text-[10px] text-[#9598a1]">Objetivo de subida superior a 20¢ por contrato por defecto (ejemplo: entrar a 20¢ y salir por encima de 40¢), antes de comisiones; no equivale a beneficio neto. Estimación usando el mejor bid, sin deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
     </div>
   )
 }
