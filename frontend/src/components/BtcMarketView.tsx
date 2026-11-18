@@ -54,9 +54,16 @@ function EarlyExitRadar() {
   const history = bidHistory.filter(p => p.ticker === market?.ticker && p.side === side && Date.now() - p.at <= 120000)
   const oldest = history[0]
   const bidChangeCents = quoted && oldest && Date.now() - oldest.at >= 30000 ? (bid - oldest.bid) * 100 : null
+  const recentThree = history.slice(-3)
+  const persistentDrop = quoted && recentThree.length === 3 &&
+    recentThree[2].at - recentThree[0].at >= 10000 &&
+    recentThree[0].bid > recentThree[1].bid &&
+    recentThree[1].bid > recentThree[2].bid &&
+    (recentThree[0].bid - recentThree[2].bid) * 100 >= 2
   const gross = quoted && entryValid ? bid * 100 - entry : null
   // Watch-only: a profitable bid is not a prediction that it will reverse.
   const exitWatch = gross === null ? 'SIN DATOS SUFICIENTES' :
+    gross > 0 && persistentDrop ? 'ATENCIÓN · 3 CAÍDAS CONSECUTIVAS DEL BID' :
     gross > 0 && bidChangeCents !== null && bidChangeCents <= -3 ? 'ATENCIÓN · BID RETROCEDE 3¢ O MÁS' :
     gross > 0 && timeLeftMs <= 120000 ? 'BENEFICIO DISPONIBLE · VENCIMIENTO PRÓXIMO' :
     gross > 0 ? 'BENEFICIO DISPONIBLE · VIGILAR BID' :
@@ -83,6 +90,7 @@ function EarlyExitRadar() {
         <span>Resultado bruto: <strong className={gross === null ? 'text-[#9db4ca]' : gross >= 0 ? 'text-[#26a69a]' : 'text-[#ef5350]'}>{gross === null ? '—' : (gross >= 0 ? '+' : '') + gross.toFixed(1) + '¢/contrato'}</strong></span>
       </div>
       <div className={`mt-1 text-[10px] font-bold ${gross !== null && gross > 0 ? 'text-[#e4b95b]' : 'text-[#9db4ca]'}`} role="status">Vigilancia de salida: {exitWatch}</div>
+      <div className="mt-1 text-[10px] text-[#9598a1]">Caídas consecutivas: {quoted ? (persistentDrop ? '3 muestras descendentes (≥2¢)' : 'NO CONFIRMADAS') : 'SIN DATOS'} · Solo vigilancia, no señal predictiva validada.</div>
       <div className="mt-1 text-[10px] text-[#9598a1]">Estimación usando el mejor bid, sin comisiones, deslizamiento ni garantía de ejecución. No detecta posiciones ni ejecuta ventas.</div>
     </div>
   )
