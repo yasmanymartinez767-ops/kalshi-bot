@@ -74,6 +74,8 @@ def summarize(results):
         independent_scored = [r for r in independent if r["correct"] is not None]
         independent_up = sum(r.get("actual_direction") == "ALCISTA" for r in independent_scored) / len(independent_scored) if independent_scored else None
         independent_down = sum(r.get("actual_direction") == "BAJISTA" for r in independent_scored) / len(independent_scored) if independent_scored else None
+        independent_hit_rate = (sum(r["correct"] is True for r in independent_scored) / len(independent_scored)) if independent_scored else None
+        best_baseline = max(independent_up, independent_down) if independent_up is not None and independent_down is not None else None
         summary[horizon] = {
             "signals": len(group),
             "non_overlapping_signals": len(independent),
@@ -81,6 +83,8 @@ def summarize(results):
             "non_overlapping_hit_rate": (sum(r["correct"] is True for r in independent_scored) / len(independent_scored)) if independent_scored else None,
             "non_overlapping_always_up_baseline": independent_up,
             "non_overlapping_always_down_baseline": independent_down,
+            "non_overlapping_best_baseline": best_baseline,
+            "non_overlapping_edge_vs_best_baseline": (independent_hit_rate - best_baseline) if independent_hit_rate is not None and best_baseline is not None else None,
             "scored": len(scored),
             "correct": sum(r["correct"] is True for r in scored),
             "hit_rate": (sum(r["correct"] is True for r in scored) / len(scored)) if scored else None,
