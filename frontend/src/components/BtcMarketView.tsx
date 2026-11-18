@@ -133,8 +133,11 @@ function YmcSignalPanel() {
         <span>MACD (12,26,9): {valid ? data!.macd_hist?.toFixed(3) : '—'}</span>
         <span className="text-[#9db4ca]">Coinbase 1m · {status} {valid ? '· ' + data!.as_of_utc.slice(11, 19) + ' UTC' : ''}</span>
       </div>
-      <YmcHorizonScale valid={valid} />
-      <EarlyExitRadar />
+      <details className="mt-2 rounded border border-[#254158] bg-[#071626] px-2 py-1.5">
+        <summary className="cursor-pointer select-none text-[11px] font-semibold text-[#e4b95b]">Radar Kalshi · objetivos de salida · horizontes 5/10/15m</summary>
+        <YmcHorizonScale valid={valid} />
+        <EarlyExitRadar />
+      </details>
       {valid && data?.early_watch && data.early_watch !== 'NINGUNA' && (
         <div className="mt-1 text-[11px] text-[#e4b95b]">Vigilancia temprana: {data.early_watch.split('_').join(' ')} · Patrón exploratorio, sin precisión validada</div>
       )}
@@ -335,7 +338,7 @@ export function BtcMarketView() {
 
       {/* 2x2 grid: all four charts share the same filters, theme, pattern markers, and view-state preservation */}
       <div className="shrink-0 grid grid-cols-1 auto-rows-[300px] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:grid-cols-2 lg:grid-rows-2 lg:auto-rows-auto">
-        <div className="border-b border-r border-[#254158] min-h-0 h-[440px] lg:h-auto">
+        <div className="border-b border-r border-[#254158] min-h-0 h-[min(64vh,520px)] min-h-[330px] lg:h-auto">
           <ChartPanel title="BTC/USD Candlestick (Coinbase)">
             <BtcCandlestickChart candles={candles ?? []} showPatterns={showPatterns} viewKey={viewKey} />
           </ChartPanel>
