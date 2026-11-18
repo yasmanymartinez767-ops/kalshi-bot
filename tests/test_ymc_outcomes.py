@@ -114,3 +114,13 @@ def test_aligned_vote_groups_partition_signals():
     report = aligned_quarter_hour_report(rows)
     assert set(report["by_votes_exploratory"]) == {"0", "5"}
     assert sum(v["signals"] for v in report["by_votes_exploratory"].values()) == 2
+    assert set(report["by_direction_exploratory"]) == {"ALCISTA", "BAJISTA"}
+
+
+def test_aligned_direction_breakdown_matches_all_signals():
+    rows = [
+        {"decision_utc": "2026-11-18T12:00:01+00:00", "horizon_minutes": 15, "direction": "ALCISTA", "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-18T12:15:01+00:00", "horizon_minutes": 15, "direction": "BAJISTA", "correct": False, "actual_direction": "ALCISTA"},
+    ]
+    report = aligned_quarter_hour_report(rows)
+    assert sum(v["summary"]["signals"] for v in report["by_direction_exploratory"].values()) == report["aligned_decisions"]
