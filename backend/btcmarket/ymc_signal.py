@@ -2,6 +2,45 @@
 from datetime import datetime, timezone
 from math import isfinite
 
+
+def candle_context(rows, rsi, ema9, ema21):
+    """Explain closed-candle rejection, follow-through and chop; not a probability."""
+    last, prev = rows[-1], rows[-2]
+    def parts(c):
+        o, h, l, cl = (float(c[k]) for k in ("open", "high", "low", "close"))
+        span = h - l
+        body = abs(cl - o)
+        return body, span, h - max(o, cl), min(o, cl) - l
+    body, span, upper, lower = parts(last)
+    prev_body, prev_span, prev_upper, prev_lower = parts(prev)
+    avg_vol = sum(float(c["volume"]) for c in rows[-21:-1]) / 20
+    vol = float(last["volume"])
+    relative_volume = vol / avg_vol if avg_vol > 0 else None
+    bull_rejection = span > 0 and lower >= 2 * max(body, span * 0.05) and lower >= span * 0.4
+    bear_rejection = span > 0 and upper >= 2 * max(body, span * 0.05) and upper >= span * 0.4
+    prev_bull = prev_span > 0 and prev_lower >= 2 * max(prev_body, prev_span * 0.05) and prev_lower >= prev_span * 0.4
+    prev_bear = prev_span > 0 and prev_upper >= 2 * max(prev_body, prev_span * 0.05) and prev_upper >= prev_span * 0.4
+    follow_up = prev_bull and float(last["close"]) > float(prev["high"])
+    follow_down = prev_bear and float(last["close"]) < float(prev["low"])
+    closes = [float(c["close"]) for c in rows[-6:]]
+    crossings = sum((a - ema9) * (b - ema9) < 0 for a, b in zip(closes, closes[1:]))
+    sideways = (abs(ema9 - ema21) / float(last["close"]) < 0.0005 and crossings >= 2)
+    pattern = ("CONTINUACION_REBOTE" if follow_up else
+               "CONTINUACION_RECHAZO_BAJISTA" if follow_down else
+               "RECHAZO_INFERIOR" if bull_rejection else
+               "RECHAZO_SUPERIOR" if bear_rejection else
+               "INDECISION" if span > 0 and body / span <= 0.2 else "NINGUNO")
+    return {
+        "pattern": pattern,
+        "sideways_watch": sideways,
+        "volume_ratio_20": round(relative_volume, 3) if relative_volume is not None else None,
+        "volume_elevated": relative_volume is not None and relative_volume >= 1.5,
+        "rsi_above_50": rsi > 50,
+        "ema_bullish": ema9 > ema21,
+        "pattern_validated": False,
+        "note": "Heuristic observations on closed candles; not tested predictive accuracy",
+    }
+
 def evaluate(candles, now=None):
     """Input: chronological, fully CLOSED 1m OHLCV dicts with Unix-second timestamps."""
     now = datetime.now(timezone.utc).timestamp() if now is None else float(now)
@@ -60,4 +99,4 @@ def evaluate(candles, now=None):
     return {"direction":direction,"votes":votes,"reason":"technical_votes_not_probability",
             "early_watch":warning,"early_watch_validated":False,
             "validated":True,"rsi14":round(rsi,2),"ema9":e9[-1],"ema21":e21[-1],
-            "macd_hist":hist,"as_of_utc":datetime.fromtimestamp(ts[-1]+60,timezone.utc).isoformat()}
+            "macd_hist":hist,"candle_context":candle_context(rows,rsi,e9[-1],e21[-1]),"as_of_utc":datetime.fromtimestamp(ts[-1]+60,timezone.utc).isoformat()}
