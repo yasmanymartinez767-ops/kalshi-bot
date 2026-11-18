@@ -64,7 +64,8 @@ def wilson_95_interval(successes, total):
     denominator = 1 + z * z / total
     center = (p + z * z / (2 * total)) / denominator
     half = z * sqrt((p * (1 - p) + z * z / (4 * total)) / total) / denominator
-    return {"lower": max(0.0, center - half), "upper": min(1.0, center + half)}
+    return {"lower": 0.0 if successes == 0 else max(0.0, center - half),
+            "upper": 1.0 if successes == total else min(1.0, center + half)}
 
 
 def summarize(results):
