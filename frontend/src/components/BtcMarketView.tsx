@@ -377,7 +377,7 @@ export function BtcMarketView() {
             <BtcProbabilityChart snapshots={snapshots ?? []} viewKey={historyRange} />
           </ChartPanel>
         </div>}
-      </div>}
+      </div>
     </div>
   )
 }
