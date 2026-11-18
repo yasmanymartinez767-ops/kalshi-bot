@@ -37,6 +37,13 @@ class OpportunityTests(unittest.TestCase):
                           quote("02", yes_ask="0.42", yes_bid="0.41")])
         self.assertEqual(result["best_observed_gross_gain_cents_by_contract_side"]["KXBTC15M-TEST:YES"], 21.0)
 
+    def test_distinct_contract_count_and_elapsed_seconds(self):
+        result = analyze([quote("00"), quote("01", yes_ask="0.42", yes_bid="0.41", no_ask="0.59", no_bid="0.58"),
+                          quote("02", yes_ask="0.50", yes_bid="0.49", no_ask="0.51", no_bid="0.50")])
+        self.assertEqual(result["contract_sides_with_at_least_one_over_20c_opportunity"], 1)
+        self.assertEqual(result["first_opportunity_by_contract_side"][0]["elapsed_seconds"], 60.0)
+        self.assertEqual(result["first_opportunity_by_contract_side"][0]["gross_gain_cents"], 21.0)
+
     def test_yes_no_are_separate(self):
         result = analyze([quote("00", yes_ask="0.20", yes_bid="0.19", no_ask="0.20", no_bid="0.19"),
                           quote("01", yes_ask="0.42", yes_bid="0.41", no_ask="0.42", no_bid="0.41")])
