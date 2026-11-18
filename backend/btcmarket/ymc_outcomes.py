@@ -63,7 +63,7 @@ def summarize(results):
         # independent evidence.
         independent = []
         next_allowed = None
-        for row in sorted(group, key=lambda r: r["decision_utc"]):
+        for row in sorted((r for r in group if r.get("decision_utc")), key=lambda r: r["decision_utc"]):
             t = datetime.fromisoformat(row["decision_utc"]).timestamp()
             if next_allowed is None or t >= next_allowed:
                 independent.append(row)
