@@ -42,6 +42,8 @@ def test_non_overlapping_signal_counts():
         assert summary[horizon]["non_overlapping_scored"] <= summary[horizon]["scored"]
         assert 0 <= summary[horizon]["non_overlapping_always_up_baseline"] <= 1
         assert 0 <= summary[horizon]["non_overlapping_always_down_baseline"] <= 1
+        assert summary[horizon]["non_overlapping_best_baseline"] == max(summary[horizon]["non_overlapping_always_up_baseline"], summary[horizon]["non_overlapping_always_down_baseline"])
+        assert abs(summary[horizon]["non_overlapping_edge_vs_best_baseline"] - (summary[horizon]["non_overlapping_hit_rate"] - summary[horizon]["non_overlapping_best_baseline"])) < 1e-12
 
 
 def test_daily_report_groups_by_utc_date():
