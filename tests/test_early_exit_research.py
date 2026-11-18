@@ -73,3 +73,26 @@ def test_fixed_third_quote_baseline_counts_resolved_contracts():
     assert result["baseline_third_quote"]["further_declines"] == 1
     assert result["baseline_third_quote"]["decline_rate"] == 0.5
     assert result["alerts"] == 1
+
+
+def test_no_baseline_when_horizon_reaches_expiry():
+    rows = [
+        {"ticker": "A", "time": 0, "yes_bid": .50, "close_time": 65},
+        {"ticker": "A", "time": 6, "yes_bid": .49, "close_time": 65},
+        {"ticker": "A", "time": 12, "yes_bid": .47, "close_time": 65},
+        {"ticker": "A", "time": 72, "yes_bid": .40, "close_time": 65},
+    ]
+    result = evaluate_bid_drop_alerts(rows)
+    assert result["resolved"] == 0
+    assert result["baseline_third_quote"]["resolved"] == 0
+
+
+def test_yes_and_no_are_evaluated_separately():
+    rows = [
+        {"ticker": "A", "time": 0, "yes_bid": .50, "no_bid": .40},
+        {"ticker": "A", "time": 6, "yes_bid": .49, "no_bid": .42},
+        {"ticker": "A", "time": 12, "yes_bid": .47, "no_bid": .44},
+        {"ticker": "A", "time": 72, "yes_bid": .45, "no_bid": .46},
+    ]
+    assert evaluate_bid_drop_alerts(rows, side="YES")["alerts"] == 1
+    assert evaluate_bid_drop_alerts(rows, side="NO")["alerts"] == 0
