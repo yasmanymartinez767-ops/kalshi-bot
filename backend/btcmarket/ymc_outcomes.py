@@ -251,7 +251,16 @@ def early_watch_diagnostic(results):
                 and r.get("decision_utc")
                 and datetime.fromisoformat(r["decision_utc"]).minute % 15 == 0]
     warnings = sorted({r.get("early_watch", "NINGUNA") for r in selected})
+    reversal_checks = {}
+    for warning, expected in (("POSIBLE_AGOTAMIENTO_ALCISTA", "BAJISTA"),
+                              ("POSIBLE_AGOTAMIENTO_BAJISTA", "ALCISTA")):
+        rows = [r for r in selected if r.get("early_watch") == warning and r.get("actual_direction") in ("ALCISTA", "BAJISTA")]
+        successes = sum(r["actual_direction"] == expected for r in rows)
+        reversal_checks[warning] = {"expected_spot_direction": expected, "scored": len(rows),
+                                    "matches": successes, "match_rate": successes / len(rows) if rows else None,
+                                    "wilson_95": wilson_95_interval(successes, len(rows))}
     return {"total_aligned_signals": len(selected),
+            "reversal_hypotheses_exploratory": reversal_checks,
             "by_early_watch": {
                 warning: summarize([r for r in selected if r.get("early_watch", "NINGUNA") == warning]).get(15, {})
                 for warning in warnings},
