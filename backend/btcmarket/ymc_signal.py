@@ -43,6 +43,21 @@ def evaluate(candles, now=None):
     rsi=100 if losses==0 and gains>0 else (50 if losses==0 else 100-100/(1+gains/losses))
     votes=sum((e9[-1]>e21[-1],close[-1]>e9[-1],rsi>50,close[-1]>close[-6],hist>0))
     direction="ALCISTA" if votes>=4 else ("BAJISTA" if votes<=1 else "ESPERAR")
+    # Early *watch* flags are deliberately separate from the trend vote.
+    # They identify potential exhaustion, not a validated 10/15m prediction.
+    recent = rows[-3:]
+    body = abs(float(recent[-1]["close"]) - float(recent[-1]["open"]))
+    span = float(recent[-1]["high"]) - float(recent[-1]["low"])
+    upper_wick = float(recent[-1]["high"]) - max(float(recent[-1]["open"]), float(recent[-1]["close"]))
+    lower_wick = min(float(recent[-1]["open"]), float(recent[-1]["close"])) - float(recent[-1]["low"])
+    warning = "NINGUNA"
+    if rsi >= 70 and (upper_wick > 2 * max(body, 0.01) or close[-1] < close[-2]):
+        warning = "POSIBLE_AGOTAMIENTO_ALCISTA"
+    elif rsi <= 30 and (lower_wick > 2 * max(body, 0.01) or close[-1] > close[-2]):
+        warning = "POSIBLE_AGOTAMIENTO_BAJISTA"
+    elif span > 0 and body / span <= 0.2 and abs(close[-1] - close[-2]) > 0:
+        warning = "INDECISION"
     return {"direction":direction,"votes":votes,"reason":"technical_votes_not_probability",
+            "early_watch":warning,"early_watch_validated":False,
             "validated":True,"rsi14":round(rsi,2),"ema9":e9[-1],"ema21":e21[-1],
             "macd_hist":hist,"as_of_utc":datetime.fromtimestamp(ts[-1]+60,timezone.utc).isoformat()}
