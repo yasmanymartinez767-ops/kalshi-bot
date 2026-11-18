@@ -5,7 +5,7 @@ import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, f
 import { BtcCandlestickChart } from './BtcCandlestickChart'
 import { BtcProbabilityChart } from './BtcProbabilityChart'
 
-type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean }
+type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean; candle_context?: { pattern: string; sideways_watch: boolean; volume_ratio_20: number | null; volume_elevated: boolean; pattern_validated: boolean } }
 
 function YmcSignalPanel() {
   const { data, isError, isPending, isFetching, dataUpdatedAt } = useQuery<YmcSignal>({
@@ -31,6 +31,15 @@ function YmcSignalPanel() {
       </div>
       {valid && data?.early_watch && data.early_watch !== 'NINGUNA' && (
         <div className="mt-1 text-[11px] text-[#e4b95b]">Vigilancia temprana: {data.early_watch.split('_').join(' ')} · Patrón exploratorio, sin precisión validada</div>
+      )}
+      {valid && data?.candle_context && (
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px]" aria-label="Análisis de velas cerradas">
+          <span className="text-[#e4b95b]">Patrón 1m: {data.candle_context.pattern.replaceAll('_', ' ')}</span>
+          <span>Volumen / promedio 20m: {data.candle_context.volume_ratio_20 == null ? '—' : data.candle_context.volume_ratio_20.toFixed(2) + 'x'}</span>
+          {data.candle_context.volume_elevated && <span className="text-[#e4b95b]">VOLUMEN ELEVADO</span>}
+          {data.candle_context.sideways_watch && <span className="text-[#e4b95b]">POSIBLE MERCADO LATERAL · ESPERAR</span>}
+          <span className="text-[#9db4ca]">Observación exploratoria, no predicción validada</span>
+        </div>
       )}
       <div className="text-[10px] text-[#9598a1] mt-1">{dataUpdatedAt ? `Última consulta: ${new Date(dataUpdatedAt).toLocaleTimeString()}. ` : ""}Señal técnica informativa, no probabilidad ni recomendación de entrada. Coinbase spot ≠ referencia de liquidación Kalshi.</div>
     </div>
