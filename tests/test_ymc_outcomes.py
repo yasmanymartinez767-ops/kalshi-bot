@@ -32,3 +32,11 @@ def test_summary_empty_is_safe():
     result = summarize([{"horizon_minutes": 10, "correct": None}])
     assert result[10]["hit_rate"] is None
     assert result[10]["validated_predictive_accuracy"] is False
+
+
+def test_non_overlapping_signal_counts():
+    rows = evaluate_history(sample())
+    summary = summarize(rows)
+    for horizon in (10, 15):
+        assert summary[horizon]["non_overlapping_signals"] <= summary[horizon]["signals"]
+        assert summary[horizon]["non_overlapping_scored"] <= summary[horizon]["scored"]
