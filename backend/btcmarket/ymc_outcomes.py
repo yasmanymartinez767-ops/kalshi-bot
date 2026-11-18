@@ -285,7 +285,26 @@ def early_watch_diagnostic(results):
                                           "reversal_rate": wins / len(sample) if sample else None,
                                           "wilson_95": wilson_95_interval(wins, len(sample))}
         return out
+    # Compare warning versus no-warning only within the same original vote direction.
+    # This avoids mistaking a change in the mix of bullish/bearish votes for warning skill.
+    conditional_comparison = {}
+    for original, warning, expected in (
+        ("ALCISTA", "POSIBLE_AGOTAMIENTO_ALCISTA", "BAJISTA"),
+        ("BAJISTA", "POSIBLE_AGOTAMIENTO_BAJISTA", "ALCISTA"),
+    ):
+        conditional_comparison[warning] = {}
+        for group_name, warning_filter in (("warning", warning), ("no_warning", "NINGUNA")):
+            sample = [r for r in selected if r.get("direction") == original
+                      and r.get("early_watch", "NINGUNA") == warning_filter
+                      and r.get("actual_direction") in ("ALCISTA", "BAJISTA")]
+            matches = sum(r["actual_direction"] == expected for r in sample)
+            conditional_comparison[warning][group_name] = {
+                "original_signal": original, "expected_reversal": expected,
+                "scored": len(sample), "reversals": matches,
+                "reversal_rate": matches / len(sample) if sample else None,
+                "wilson_95": wilson_95_interval(matches, len(sample))}
     return {"total_aligned_signals": len(selected),
+            "reversal_vs_no_warning_same_direction": conditional_comparison,
             "reversal_by_original_signal_exploratory": reversal_by_direction(selected),
             "reversal_chronological_diagnostic": {
                 "reference_dates_utc": dates[:-1] if holdout_date else dates,
