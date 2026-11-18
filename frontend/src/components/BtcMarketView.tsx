@@ -175,8 +175,9 @@ export function BtcMarketView() {
   })
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#071626] text-[#e0edff]" style={{ fontFamily: "-apple-system, 'Trebuchet MS', Roboto, Ubuntu, sans-serif" }}>
-      <MarketHeader />\n      <YmcSignalPanel />
+    <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-y-contain lg:overflow-hidden bg-[#071626] text-[#e0edff]" style={{ fontFamily: "-apple-system, 'Trebuchet MS', Roboto, Ubuntu, sans-serif" }}>
+      <MarketHeader />
+      <YmcSignalPanel />
 
       {/* toolbar: TradingView-style filter row */}
       <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-1.5 flex items-center gap-4 flex-wrap">
@@ -206,7 +207,7 @@ export function BtcMarketView() {
       </div>
 
       {/* 2x2 grid: all four charts share the same filters, theme, pattern markers, and view-state preservation */}
-      <div className="flex-1 min-h-0 overflow-y-auto grid grid-cols-1 auto-rows-[300px] lg:grid-cols-2 lg:grid-rows-2 lg:auto-rows-auto">
+      <div className="shrink-0 grid grid-cols-1 auto-rows-[300px] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:grid-cols-2 lg:grid-rows-2 lg:auto-rows-auto">
         <div className="border-b border-r border-[#254158] min-h-0 h-[440px] lg:h-auto">
           <ChartPanel title="BTC/USD Candlestick (Coinbase)">
             <BtcCandlestickChart candles={candles ?? []} showPatterns={showPatterns} viewKey={viewKey} />
