@@ -107,3 +107,28 @@ async def get_ymc_technical():
                             "macd_fast": 12, "macd_slow": 26, "macd_signal": 9}
     result["settlement_price_warning"] = "Coinbase spot is not Kalshi's settlement reference"
     return result
+
+@router.get("/history-status")
+async def get_history_status():
+    """Read-only diagnostics for persisted Kalshi snapshots and candles."""
+    from datetime import datetime, timezone
+    from sqlalchemy import func
+    from backend.models.database import SessionLocal, KxBtcSnapshot, KxBtcCandle
+    db = SessionLocal()
+    try:
+        snapshots = db.query(func.count(KxBtcSnapshot.id)).scalar() or 0
+        candles = db.query(func.count(KxBtcCandle.id)).scalar() or 0
+        latest_snapshot = db.query(func.max(KxBtcSnapshot.timestamp)).scalar()
+        latest_candle = db.query(func.max(KxBtcCandle.open_time)).scalar()
+        def utc_iso(dt):
+            return dt.replace(tzinfo=timezone.utc).isoformat() if dt else None
+        return {
+            "snapshot_count": snapshots,
+            "candle_count": candles,
+            "latest_snapshot_utc": utc_iso(latest_snapshot),
+            "latest_candle_utc": utc_iso(latest_candle),
+            "recording_active": bool(latest_snapshot and
+                (datetime.utcnow() - latest_snapshot).total_seconds() < 180),
+        }
+    finally:
+        db.close()
