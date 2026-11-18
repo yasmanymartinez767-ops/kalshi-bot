@@ -1,4 +1,4 @@
-from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report
+from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, daily_report, forward_day_check
 
 
 def sample(n=65):
@@ -52,3 +52,15 @@ def test_daily_report_groups_by_utc_date():
     assert daily
     assert all(len(day) == 10 for day in daily)
     assert sum(v["signals"] for horizons in daily.values() for v in horizons.values()) == len(rows)
+
+
+def test_forward_day_check_does_not_count_reference_day():
+    assert forward_day_check([])["forward_day_count"] == 0
+    rows = [
+        {"decision_utc": "2026-11-15T12:00:00+00:00", "horizon_minutes": 15, "correct": True, "actual_direction": "ALCISTA"},
+        {"decision_utc": "2026-11-16T12:00:00+00:00", "horizon_minutes": 15, "correct": False, "actual_direction": "BAJISTA"},
+    ]
+    report = forward_day_check(rows)
+    assert report["reference_day_utc"] == "2026-11-15"
+    assert report["forward_day_count"] == 1
+    assert list(report["forward_days"]) == ["2026-11-16"]
