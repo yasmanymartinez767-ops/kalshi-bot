@@ -15,6 +15,7 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
         raise ValueError("Invalid side or horizon")
     key = "yes_bid" if side == "YES" else "no_bid"
     grouped = defaultdict(list)
+    expiry_by_ticker = {}
     for row in snapshots:
         try:
             ticker, at, bid = row["ticker"], int(row["time"]), float(row[key])
@@ -25,8 +26,10 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
                 close = int((close if close.tzinfo else close.replace(tzinfo=timezone.utc)).timestamp())
             elif close is not None:
                 close = int(close)
-            if close is not None and at >= close:
-                continue
+            if close is not None:
+                expiry_by_ticker[ticker] = min(expiry_by_ticker.get(ticker, close), close)
+                if at >= close:
+                    continue
         except (KeyError, TypeError, ValueError):
             continue
         if ticker and 0 < bid <= 1:
@@ -43,6 +46,11 @@ def evaluate_bid_drop_alerts(snapshots, side="YES", horizon_seconds=60):
             trigger = c
             break
         if trigger is None:
+            continue
+        # A 60-second evaluation must finish while the contract is still open.
+        expiry = expiry_by_ticker.get(ticker)
+        if expiry is not None and trigger[0] + horizon_seconds >= expiry:
+            results.append({"ticker": ticker, "outcome": "UNRESOLVED"})
             continue
         # Require a nearby observation; a quote many minutes later is not a 60s outcome.
         future = next((r for r in rows if r[0] >= trigger[0] + horizon_seconds), None)
