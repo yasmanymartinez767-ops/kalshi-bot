@@ -154,3 +154,13 @@ def test_chronological_holdout_keeps_last_day_separate():
     assert report["holdout"]["summary"]["signals"] == 1
     assert report["holdout"]["by_direction"]["BAJISTA"]["signals"] == 1
     assert chronological_holdout_report(rows[:1])["holdout"] == {}
+
+
+def test_daily_coverage_partitions_all_valid_slots():
+    coverage = quarter_hour_coverage(sample(), [])
+    days = coverage["daily_utc"]
+    assert sum(day["eligible_slots"] for day in days.values()) == coverage["eligible_slots"]
+    assert sum(day["directional_slots"] for day in days.values()) == coverage["directional_slots"]
+    assert sum(day["wait_slots"] for day in days.values()) == coverage["wait_slots"]
+    for day in days.values():
+        assert day["eligible_slots"] == day["directional_slots"] + day["wait_slots"]
