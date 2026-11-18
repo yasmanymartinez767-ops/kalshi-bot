@@ -19,8 +19,9 @@ def main():
     latest = max(closed, key=lambda row: row[0])
     age = now.timestamp() - (latest[0] + 60)
     result["coinbase"] = {"closed_candle_age_seconds": round(age), "close_usd": latest[4], "ok": age <= 180}
+    # Continue to Kalshi even when Coinbase is stale, so both feeds are diagnosed.
     if not result["coinbase"]["ok"]:
-        raise RuntimeError("Coinbase closed candle stale")
+        result["coinbase"]["warning"] = "Closed Coinbase candle older than 180 seconds"
     try:
         market_data = fetch("https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open&limit=10")
         markets = market_data.get("markets", [])
@@ -34,8 +35,8 @@ def main():
     except Exception as exc:
         result["kalshi"] = {"error": str(exc)}
     print(json.dumps(result, indent=2))
-    if not result["kalshi"].get("matching_contracts"):
-        raise RuntimeError("Kalshi active BTC 15m contract not confirmed")
+    if not result["coinbase"]["ok"] or not result["kalshi"].get("matching_contracts"):
+        raise RuntimeError("Live-feed checks failed; see JSON diagnostics above")
 
 
 if __name__ == "__main__":
