@@ -41,8 +41,10 @@ def main():
         "yes": yes,
         "no": no,
         "method": "first three-quote drop per contract; compare next bid at 60-90s; exclude expiry",
-        "limitation": "Alert success means a further decline, not proven profitability. No unalerted baseline, fees, or executable fill model.",
+        "limitation": "Alert success means a further decline, not proven profitability. Baseline is unmatched; fees and executable fills are not modeled.",
     }
+    if snapshots and len({r["ticker"] for r in snapshots}) < 30:
+        result["sample_warning"] = "FEWER THAN 30 CONTRACTS; TOO SMALL FOR RELIABLE PERFORMANCE CLAIMS"
     if not snapshots:
         result["warning"] = "NO HISTORICAL SNAPSHOTS IN CONNECTED DATABASE; NO ACCURACY CLAIM POSSIBLE"
     print(json.dumps(result, indent=2, ensure_ascii=False))
