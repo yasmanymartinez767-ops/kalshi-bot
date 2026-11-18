@@ -39,6 +39,9 @@ def evaluate_history(candles, horizons=(10, 15)):
                 "decision_utc": datetime.fromtimestamp(decision_time, timezone.utc).isoformat(),
                 "direction": signal["direction"],
                 "votes": signal["votes"],
+                "pattern": signal.get("candle_context", {}).get("pattern", "NINGUNO"),
+                "volume_elevated": signal.get("candle_context", {}).get("volume_elevated", False),
+                "sideways_watch": signal.get("candle_context", {}).get("sideways_watch", False),
                 "horizon_minutes": horizon,
                 "entry_spot": entry,
                 "exit_spot": exit_price,
@@ -82,3 +85,27 @@ def summarize(results):
             "validated_predictive_accuracy": False,
         }
     return summary
+
+
+def breakdown(results):
+    """Exploratory performance by pattern, volume, and sideways market.
+
+    Each subgroup is descriptive; it is NOT a tuned trading rule or
+    independent evidence of predictive skill.
+    """
+    output = {}
+    for horizon in sorted({r["horizon_minutes"] for r in results}):
+        group = [r for r in results if r["horizon_minutes"] == horizon]
+        groups = {}
+        for field in ("pattern", "volume_elevated", "sideways_watch", "votes"):
+            values = sorted({str(r.get(field, "UNKNOWN")) for r in group})
+            for value in values:
+                selected = [r for r in group if str(r.get(field, "UNKNOWN")) == value]
+                scored = [r for r in selected if r["correct"] is not None]
+                groups[f"{field}={value}"] = {
+                    "signals": len(selected),
+                    "scored": len(scored),
+                    "hit_rate": sum(r["correct"] is True for r in scored) / len(scored) if scored else None,
+                }
+        output[horizon] = groups
+    return output
