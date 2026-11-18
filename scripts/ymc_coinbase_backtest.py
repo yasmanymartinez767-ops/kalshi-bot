@@ -1,4 +1,4 @@
-"""One-day Coinbase BTC-USD 1m research run; no orders or API credentials.
+"""Three-day Coinbase BTC-USD 1m research run; no orders or API credentials.
 
 Run: python scripts/ymc_coinbase_backtest.py
 Outputs a JSON summary; spot direction is not Kalshi P&L.
@@ -12,7 +12,7 @@ from urllib.request import Request, urlopen
 from backend.btcmarket.ymc_outcomes import evaluate_history, summarize, breakdown
 
 
-def download_closed_minutes(minutes=1440):
+def download_closed_minutes(minutes=4320):
     # Two-minute buffer prevents Coinbase's latest incomplete candle entering research.
     end = (int(time.time()) // 60 - 2) * 60
     start = end - minutes * 60
