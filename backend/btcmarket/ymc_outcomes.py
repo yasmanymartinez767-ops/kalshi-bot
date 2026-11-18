@@ -93,6 +93,7 @@ def summarize(results):
         best_baseline = max(independent_up, independent_down) if independent_up is not None and independent_down is not None else None
         momentum_scored = [r for r in independent_scored if r.get("momentum_baseline_direction") in ("ALCISTA", "BAJISTA")]
         momentum_rate = (sum(r["momentum_baseline_direction"] == r.get("actual_direction") for r in momentum_scored) / len(momentum_scored)) if momentum_scored else None
+        ymc_on_momentum_subset = (sum(r["correct"] is True for r in momentum_scored) / len(momentum_scored)) if momentum_scored else None
         summary[horizon] = {
             "signals": len(group),
             "non_overlapping_signals": len(independent),
@@ -102,8 +103,11 @@ def summarize(results):
             "non_overlapping_always_up_baseline": independent_up,
             "non_overlapping_always_down_baseline": independent_down,
             "non_overlapping_best_baseline": best_baseline,
+            "best_baseline_is_hindsight_only": True,
             "non_overlapping_momentum_baseline_scored": len(momentum_scored),
             "non_overlapping_momentum_baseline_hit_rate": momentum_rate,
+            "non_overlapping_ymc_on_momentum_subset_hit_rate": ymc_on_momentum_subset,
+            "non_overlapping_edge_vs_momentum_on_same_subset": (ymc_on_momentum_subset - momentum_rate) if ymc_on_momentum_subset is not None and momentum_rate is not None else None,
             "non_overlapping_edge_vs_best_baseline": (independent_hit_rate - best_baseline) if independent_hit_rate is not None and best_baseline is not None else None,
             "scored": len(scored),
             "correct": sum(r["correct"] is True for r in scored),
