@@ -5,7 +5,7 @@ import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, f
 import { BtcCandlestickChart } from './BtcCandlestickChart'
 import { BtcProbabilityChart } from './BtcProbabilityChart'
 
-type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean; leading_watch?: string; leading_watch_validated?: boolean; candle_context?: { pattern: string; sideways_watch: boolean; volume_ratio_20: number | null; volume_elevated: boolean; pattern_validated: boolean } }
+type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean; leading_watch?: string; leading_watch_validated?: boolean; tick_pressure?: string; tick_age_seconds?: number | null; candle_context?: { pattern: string; sideways_watch: boolean; volume_ratio_20: number | null; volume_elevated: boolean; pattern_validated: boolean } }
 
 // Future horizons are intentionally not inferred from the current 1m vote count.
 // A probability requires a separate, calibrated 5m/10m/15m forecasting model.
@@ -169,6 +169,12 @@ function YmcSignalPanel() {
       <div className="mt-2 flex items-center justify-between gap-2 text-xs">
         <span className="font-semibold text-slate-100">{insight}</span>
         <span className="shrink-0 text-[10px] text-slate-500">Vigilancia · no validada</span>
+      </div>
+      <div className="mt-1 text-[11px] font-medium text-slate-300">
+        Presión rápida (5/15/30s): {data?.tick_pressure === 'PRESION_COMPRADORA' ? '↑ Compradora' :
+          data?.tick_pressure === 'PRESION_VENDEDORA' ? '↓ Vendedora' :
+          data?.tick_pressure === 'MIXTA' ? 'Mixta' : 'Sin datos recientes'}
+        <span className="ml-1 text-[10px] text-slate-500">· Observación, no pronóstico</span>
       </div>
       <div className="mt-1 text-[10px] text-slate-400">Patrón: {context?.pattern ?? "—"} · Volumen relativo: {typeof context?.volume_ratio_20 === "number" ? context.volume_ratio_20.toFixed(1) + "×" : "—"} · MACD: {valid && typeof data?.macd_hist === "number" ? data.macd_hist.toFixed(2) : "—"}</div>
       <YmcHorizonScale valid={valid} />
