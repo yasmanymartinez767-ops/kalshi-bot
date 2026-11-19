@@ -151,3 +151,32 @@ async def get_openai_review():
         return {"status": "insufficient_data", "analysis": None}
     market = await kalshi_poll.get_current_market()
     return await review(technical, closed, market)
+
+
+@router.get("/diagnostics")
+async def get_btc_diagnostics():
+    """Read-only data health report. Never exposes secrets or places orders."""
+    from datetime import datetime, timezone
+    import os
+    from backend.btcmarket.ymc_signal import evaluate
+    now = datetime.now(timezone.utc).timestamp()
+    try:
+        await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
+        rows = candles_mod.get_cached_candles(60, timedelta(hours=3))
+        closed = [c for c in rows if c["time"] + 60 < now]
+        technical = evaluate(closed, now=now)
+        return {
+            "server_utc": datetime.fromtimestamp(now, timezone.utc).isoformat(),
+            "coinbase_candles_cached": len(rows),
+            "closed_candles": len(closed),
+            "last_closed_age_seconds": round(now - (closed[-1]["time"] + 60), 1) if closed else None,
+            "last_40_zero_volume_count": sum(float(c["volume"]) <= 0 for c in closed[-40:]),
+            "technical_validated": technical["validated"],
+            "technical_reason": technical["reason"],
+            "technical_votes": technical["votes"],
+            "openai_key_configured": bool(os.getenv("OPENAI_API_KEY", "").strip()),
+            "openai_model": os.getenv("YMC_OPENAI_MODEL", "gpt-4.1-mini"),
+            "openai_forecast_calibrated": False,
+        }
+    except Exception:
+        return {"status": "data_source_unavailable", "technical_validated": False}
