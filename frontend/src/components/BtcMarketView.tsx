@@ -108,7 +108,7 @@ function EarlyExitRadar() {
 function YmcSignalPanel() {
   const { data, isError, isPending } = useQuery<YmcSignal>({
     queryKey: ['ymc-technical'], queryFn: fetchYmcTechnical,
-    refetchInterval: 10000, staleTime: 5000, retry: 1,
+    refetchInterval: 5000, staleTime: 3000, retry: 1,
   })
   const timestamp = data?.as_of_utc ? Date.parse(data.as_of_utc) : NaN
   const valid = !isError && data?.validated === true && Number.isFinite(timestamp) &&
@@ -123,11 +123,12 @@ function YmcSignalPanel() {
     context?.pattern === 'RECHAZO_INFERIOR' ? 'Presión alcista' :
     valid ? 'Sin giro temprano confirmado' : 'Esperando datos válidos'
   const trend = valid ? data!.direction : 'ESPERAR'
+  const ageSeconds = Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 1000)) : null
   return (
     <section className="shrink-0 border-b border-[#263443] bg-[#101923] px-3 py-2" aria-label="Señales IA" aria-live="polite">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold text-slate-300">IA · BTC</span>
-        <span className="text-[10px] text-slate-500">{valid ? 'Datos válidos · señal exploratoria' : isPending ? 'Conectando' : 'Sin señal válida'}</span>
+        <span className="text-[10px] text-slate-500">{valid ? `Analizando cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'revisar conexión'}`}</span>
       </div>
       <div className="mt-1 grid grid-cols-3 gap-2">
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
@@ -147,8 +148,9 @@ function YmcSignalPanel() {
       </div>
       <div className="mt-2 flex items-center justify-between gap-2 text-xs">
         <span className="font-semibold text-slate-100">{insight}</span>
-        <span className="shrink-0 text-[10px] text-slate-500">Alerta temprana · no confirmada</span>
+        <span className="shrink-0 text-[10px] text-slate-500">Vigilancia · no validada</span>
       </div>
+      <div className="mt-1 text-[10px] text-slate-400">Patrón: {context?.pattern ?? "—"} · Volumen relativo: {typeof context?.volume_ratio_20 === "number" ? context.volume_ratio_20.toFixed(1) + "×" : "—"} · MACD: {valid && typeof data?.macd_hist === "number" ? data.macd_hist.toFixed(2) : "—"}</div>
       <YmcHorizonScale valid={valid} />
       <details className="mt-1 text-[11px] text-slate-400">
         <summary className="cursor-pointer">Radar de salida · opcional</summary>
@@ -212,6 +214,7 @@ function MarketHeader() {
     Number.isFinite(bid) && Number.isFinite(ask) && bid >= 0 && ask > 0 && bid <= ask && ask <= 1
   const yesValid = validSide(market.yes_bid, market.yes_ask)
   const noValid = validSide(market.no_bid, market.no_ask)
+  const percent = (bid: number, ask: number) => (((bid + ask) / 2) * 100).toFixed(1) + '%'
 
   return (
     <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-2" aria-label="Cotizaciones de ambos contratos Kalshi">
@@ -221,17 +224,19 @@ function MarketHeader() {
       </div>
       <div className="mt-1 grid grid-cols-2 gap-2">
         <div className="rounded border border-[#176b55] bg-[#0a2524] px-2 py-1.5">
-          <div className="text-xs font-bold text-emerald-400">↑ SUBE · SÍ (YES)</div>
+          <div className="text-xs font-bold text-emerald-400">↑ SUBE</div>
+          <div className="text-lg font-bold text-emerald-300 tabular-nums">{yesValid ? percent(market.yes_bid, market.yes_ask) : "—"}</div>
           <div className="text-[11px] text-[#e0edff] tabular-nums">Comprar <strong>{yesValid ? quote(market.yes_ask) : '—'}</strong> · Vender <strong>{yesValid ? quote(market.yes_bid) : '—'}</strong></div>
         </div>
         <div className="rounded border border-[#823747] bg-[#29151f] px-2 py-1.5">
-          <div className="text-xs font-bold text-rose-400">↓ BAJA · NO (NO)</div>
+          <div className="text-xs font-bold text-rose-400">↓ BAJA</div>
+          <div className="text-lg font-bold text-rose-300 tabular-nums">{noValid ? percent(market.no_bid, market.no_ask) : "—"}</div>
           <div className="text-[11px] text-[#e0edff] tabular-nums">Comprar <strong>{noValid ? quote(market.no_ask) : '—'}</strong> · Vender <strong>{noValid ? quote(market.no_bid) : '—'}</strong></div>
         </div>
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
         <span>Volumen: {market.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-        <span>Cotizaciones de mercado · no son señales de IA</span>
+        <span>% = precio medio de mercado · no predicción de IA</span>
       </div>
       <details className="mt-1 text-[10px] text-[#9db4ca]">
         <summary className="cursor-pointer">Referencia de liquidación</summary>
