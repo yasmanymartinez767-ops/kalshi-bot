@@ -105,6 +105,32 @@ function EarlyExitRadar() {
   )
 }
 
+type OpenAiReview = { status: string; direction?: string; analysis: string | null; risk?: string; as_of_utc?: string; validated_prediction?: boolean }
+
+function OpenAiSecondOpinion() {
+  const { data, isPending } = useQuery<OpenAiReview>({
+    queryKey: ['openai-review'],
+    queryFn: async () => {
+      const { fetchOpenAiReview } = await import('../api')
+      return fetchOpenAiReview()
+    },
+    refetchInterval: 60000,
+    staleTime: 55000,
+    retry: 0,
+  })
+  const available = data?.status === 'exploratory' && !!data.analysis
+  return <details className="mt-1 text-[11px] text-slate-400">
+    <summary className="cursor-pointer">OpenAI · segundo analista {available ? '· análisis disponible' : '· sin análisis activo'}</summary>
+    <div className="mt-1 rounded border border-[#2b3948] p-2">
+      {available ? <>
+        <div className="font-semibold text-slate-100">{data.direction} · análisis exploratorio, no predicción validada</div>
+        <div>{data.analysis}</div>
+        <div>Riesgo: {data.risk || 'Sin evaluación adicional'}</div>
+      </> : <div>{isPending ? 'Consultando…' : data?.status === 'not_configured' ? 'Requiere configurar la clave OpenAI en el servidor.' : data?.status === 'insufficient_data' ? 'Esperando velas y señales verificadas.' : 'Analista no disponible.'}</div>}
+    </div>
+  </details>
+}
+
 function YmcSignalPanel() {
   const { data, isError, isPending } = useQuery<YmcSignal>({
     queryKey: ['ymc-technical'], queryFn: fetchYmcTechnical,
@@ -152,6 +178,7 @@ function YmcSignalPanel() {
       </div>
       <div className="mt-1 text-[10px] text-slate-400">Patrón: {context?.pattern ?? "—"} · Volumen relativo: {typeof context?.volume_ratio_20 === "number" ? context.volume_ratio_20.toFixed(1) + "×" : "—"} · MACD: {valid && typeof data?.macd_hist === "number" ? data.macd_hist.toFixed(2) : "—"}</div>
       <YmcHorizonScale valid={valid} />
+      <OpenAiSecondOpinion />
       <details className="mt-1 text-[11px] text-slate-400">
         <summary className="cursor-pointer">Radar de salida · opcional</summary>
         <EarlyExitRadar />
