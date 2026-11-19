@@ -24,6 +24,8 @@ jobs:
         with:
           node-version: '20'
       - name: Instalar y compilar React
+        env:
+          VITE_BASE_PATH: /kalshi-bot/
         working-directory: frontend
         run: |
           npm install --no-audit --no-fund
