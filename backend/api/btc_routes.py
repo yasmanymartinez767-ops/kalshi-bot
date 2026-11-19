@@ -136,28 +136,19 @@ async def get_history_status():
 
 @router.get("/openai-review")
 async def get_openai_review():
-    """Optional second-opinion model; never an order or calibrated probability."""
-    from datetime import datetime, timezone
-    from backend.btcmarket.ymc_signal import evaluate
-    from backend.btcmarket.openai_review import review
-    await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
-    rows = candles_mod.get_cached_candles(60, timedelta(hours=3))
-    now = datetime.now(timezone.utc).timestamp()
-    closed = [c for c in rows if c["time"] + 60 < now]
-    technical = evaluate(closed, now=now)
-    if technical.get("validated") and any(c["volume"] <= 0 for c in closed[-40:]):
-        technical = {"validated": False}
-    if not technical.get("validated"):
-        return {"status": "insufficient_data", "analysis": None}
-    market = await kalshi_poll.get_current_market()
-    return await review(technical, closed, market)
+    """Compatibility endpoint: paid external AI is disabled; no API call or charge."""
+    return {
+        "status": "disabled",
+        "analysis": None,
+        "reason": "paid_openai_disabled_use_ymc_technical",
+        "alternative": "/api/btc/ymc-technical",
+    }
 
 
 @router.get("/diagnostics")
 async def get_btc_diagnostics():
     """Read-only data health report. Never exposes secrets or places orders."""
     from datetime import datetime, timezone
-    import os
     from backend.btcmarket.ymc_signal import evaluate
     now = datetime.now(timezone.utc).timestamp()
     try:
@@ -174,8 +165,7 @@ async def get_btc_diagnostics():
             "technical_validated": technical["validated"],
             "technical_reason": technical["reason"],
             "technical_votes": technical["votes"],
-            "openai_key_configured": bool(os.getenv("OPENAI_API_KEY", "").strip()),
-            "openai_model": os.getenv("YMC_OPENAI_MODEL", "gpt-4.1-mini"),
+            "paid_openai_enabled": False,
             "openai_forecast_calibrated": False,
         }
     except Exception:
