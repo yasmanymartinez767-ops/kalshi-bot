@@ -206,15 +206,9 @@ function MarketHeader() {
     )
   }
 
-  const validSide = (bid: number | null | undefined, ask: number | null | undefined) =>
-    typeof bid === 'number' && typeof ask === 'number' &&
-    Number.isFinite(bid) && Number.isFinite(ask) && bid >= 0 && ask > 0 && bid <= ask && ask <= 1
-  const yesValid = validSide(market.yes_bid, market.yes_ask)
-  const noValid = validSide(market.no_bid, market.no_ask)
-  const percent = (bid: number, ask: number) => (((bid + ask) / 2) * 100).toFixed(1) + '%'
 
   return (
-    <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-2" aria-label="Cotizaciones de ambos contratos Kalshi">
+    <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-2" aria-label="Pronóstico IA a 15 minutos">
       <div className="flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
         <span className="truncate">KALSHI BTC · 15M · {market.ticker}</span>
         <span className="shrink-0">Cierra en <strong className="text-[#e0edff]">{timeRemaining(market.close_time)}</strong></span>
@@ -222,18 +216,18 @@ function MarketHeader() {
       <div className="mt-1 grid grid-cols-2 gap-2">
         <div className="rounded border border-[#176b55] bg-[#0a2524] px-2 py-1.5">
           <div className="text-xs font-bold text-emerald-400">↑ SUBE</div>
-          <div className="text-lg font-bold text-emerald-300 tabular-nums">{yesValid ? percent(market.yes_bid, market.yes_ask) : "—"}</div>
+          <div className="text-sm font-bold text-emerald-300">EN EVALUACIÓN</div>
           
         </div>
         <div className="rounded border border-[#823747] bg-[#29151f] px-2 py-1.5">
           <div className="text-xs font-bold text-rose-400">↓ BAJA</div>
-          <div className="text-lg font-bold text-rose-300 tabular-nums">{noValid ? percent(market.no_bid, market.no_ask) : "—"}</div>
+          <div className="text-sm font-bold text-rose-300">EN EVALUACIÓN</div>
           
         </div>
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
         <span>Volumen: {market.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-        <span>% = precio medio de mercado · no predicción de IA</span>
+        <span>IA 15m · probabilidades aún sin calibrar</span>
       </div>
       <details className="mt-1 text-[10px] text-[#9db4ca]">
         <summary className="cursor-pointer">Referencia de liquidación</summary>
