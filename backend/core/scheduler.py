@@ -114,6 +114,10 @@ async def _place_kalshi_order(
     price is the YES/NO ask as a fraction (0-1); converted to cents internally.
     count = floor(size_usd / price) — each contract pays $1 at settlement.
     """
+    # YMC is strictly read-only. Never submit orders, regardless of environment flags.
+    logger.warning("Order placement blocked: YMC analysis-only mode")
+    return None
+
     try:
         from backend.data.kalshi_client import KalshiClient
         price_cents = max(1, min(99, round(price * 100)))
@@ -831,13 +835,7 @@ def start_scheduler():
 
     scheduler = AsyncIOScheduler()
 
-    scheduler.add_job(
-        scan_and_trade_job,
-        IntervalTrigger(seconds=settings.SCAN_INTERVAL_SECONDS),
-        id="weather_scan",
-        replace_existing=True,
-        max_instances=1,
-    )
+    # Weather trading scheduler deliberately not registered (analysis-only).
 
     scheduler.add_job(
         settlement_job,
@@ -993,7 +991,7 @@ def start_scheduler():
                     await btc_retrain_job()
                 except Exception as e:
                     log_event("warning", f"Initial BTC model training failed: {e}")
-        await scan_and_trade_job()
+        # No automated trade scans in YMC analysis-only mode.
 
     asyncio.create_task(_startup_sequence())
 
