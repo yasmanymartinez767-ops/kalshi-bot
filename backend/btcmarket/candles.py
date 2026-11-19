@@ -73,13 +73,18 @@ def get_short_momentum() -> dict:
     result = {}
     if not ticks:
         return {"mom_5s": None, "mom_15s": None, "mom_30s": None}
-    latest_price = ticks[-1][1]
+    latest_time, latest_price = ticks[-1]
     for label, window_s in (("mom_5s", 5), ("mom_15s", 15), ("mom_30s", 30)):
-        cutoff = now - timedelta(seconds=window_s)
-        # Select the closest sample at/before the requested horizon, not the
-        # oldest sample in the deque (which made 5s/15s/30s nearly identical).
-        past = next((p for t, p in reversed(ticks) if t <= cutoff), None)
-        result[label] = round(math.log(latest_price / past), 6) if past and past > 0 else None
+        cutoff = latest_time - timedelta(seconds=window_s)
+        # Require a recent tick and a reasonably close sample for this horizon.
+        # A disconnected poller must never masquerade as a live early signal.
+        past_tick = next(((t, p) for t, p in reversed(ticks) if t <= cutoff), None)
+        if ((now - latest_time).total_seconds() > 5 or past_tick is None or
+                (cutoff - past_tick[0]).total_seconds() > 5):
+            result[label] = None
+        else:
+            past = past_tick[1]
+            result[label] = round(math.log(latest_price / past), 6) if past > 0 else None
     return result
 
 COINBASE_API = "https://api.exchange.coinbase.com"
