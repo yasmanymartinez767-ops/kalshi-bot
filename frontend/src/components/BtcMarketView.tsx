@@ -206,9 +206,6 @@ function MarketHeader() {
     )
   }
 
-  const quote = (value: number | null | undefined) =>
-    typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1
-      ? (value * 100).toFixed(0) + '¢' : '—'
   const validSide = (bid: number | null | undefined, ask: number | null | undefined) =>
     typeof bid === 'number' && typeof ask === 'number' &&
     Number.isFinite(bid) && Number.isFinite(ask) && bid >= 0 && ask > 0 && bid <= ask && ask <= 1
@@ -226,12 +223,12 @@ function MarketHeader() {
         <div className="rounded border border-[#176b55] bg-[#0a2524] px-2 py-1.5">
           <div className="text-xs font-bold text-emerald-400">↑ SUBE</div>
           <div className="text-lg font-bold text-emerald-300 tabular-nums">{yesValid ? percent(market.yes_bid, market.yes_ask) : "—"}</div>
-          <div className="text-[11px] text-[#e0edff] tabular-nums">Comprar <strong>{yesValid ? quote(market.yes_ask) : '—'}</strong> · Vender <strong>{yesValid ? quote(market.yes_bid) : '—'}</strong></div>
+          
         </div>
         <div className="rounded border border-[#823747] bg-[#29151f] px-2 py-1.5">
           <div className="text-xs font-bold text-rose-400">↓ BAJA</div>
           <div className="text-lg font-bold text-rose-300 tabular-nums">{noValid ? percent(market.no_bid, market.no_ask) : "—"}</div>
-          <div className="text-[11px] text-[#e0edff] tabular-nums">Comprar <strong>{noValid ? quote(market.no_ask) : '—'}</strong> · Vender <strong>{noValid ? quote(market.no_bid) : '—'}</strong></div>
+          
         </div>
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
