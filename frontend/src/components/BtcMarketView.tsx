@@ -12,7 +12,7 @@ type YmcSignal = { direction: string; votes: number | null; validated: boolean; 
 function YmcHorizonScale({ valid }: { valid: boolean }) {
   return <div className="mt-2 grid grid-cols-3 gap-1.5" aria-label="Horizontes predictivos">
     {([5, 10, 15] as const).map(minutes => <div key={minutes} className="rounded border border-[#2b3948] px-2 py-1 flex items-center justify-between gap-1">
-      <span className="text-xs font-semibold text-slate-200">{minutes}m</span>
+      <span translate="no" className="text-xs font-semibold text-slate-200">{minutes} min</span>
       <span className="text-[10px] text-slate-400">{valid ? 'EVALUANDO' : '—'}</span>
     </div>)}
   </div>
@@ -148,13 +148,13 @@ function YmcSignalPanel() {
     context?.pattern === 'RECHAZO_SUPERIOR' ? 'Presión bajista' :
     context?.pattern === 'RECHAZO_INFERIOR' ? 'Presión alcista' :
     valid ? 'Sin giro temprano confirmado' : 'Esperando datos válidos'
-  const trend = valid ? data!.direction : 'ESPERAR'
+  const trend = valid && ['ALCISTA', 'BAJISTA', 'ESPERAR'].includes(data!.direction) ? data!.direction : 'ESPERAR'
   const ageSeconds = Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 1000)) : null
   return (
     <section className="shrink-0 border-b border-[#263443] bg-[#101923] px-3 py-2" aria-label="Señales IA" aria-live="polite">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold text-slate-300">IA · BTC</span>
-        <span className="text-[10px] text-slate-500">{valid ? `Analizando cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
+        <span className="text-[10px] text-slate-500">{valid ? `Indicadores actualizados cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
       </div>
       <div className="mt-1 grid grid-cols-3 gap-2">
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
@@ -177,7 +177,7 @@ function YmcSignalPanel() {
         <span className="shrink-0 text-[10px] text-slate-500">Vigilancia · no validada</span>
       </div>
       <div className="mt-1 text-[10px] text-slate-400">Patrón: {context?.pattern ?? "—"} · Volumen relativo: {typeof context?.volume_ratio_20 === "number" ? context.volume_ratio_20.toFixed(1) + "×" : "—"} · MACD: {valid && typeof data?.macd_hist === "number" ? data.macd_hist.toFixed(2) : "—"}</div>
-      <YmcHorizonScale valid={valid} />
+      <YmcHorizonScale valid={false} />
       <OpenAiSecondOpinion />
       <details className="mt-1 text-[11px] text-slate-400">
         <summary className="cursor-pointer">Radar de salida · opcional</summary>
@@ -254,7 +254,7 @@ function MarketHeader() {
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
         <span>Volumen: {market.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-        <span>IA 15m · probabilidades aún sin calibrar</span>
+        <span>IA 15 min · pronóstico aún no calibrado</span>
       </div>
       <details className="mt-1 text-[10px] text-[#9db4ca]">
         <summary className="cursor-pointer">Referencia de liquidación</summary>
