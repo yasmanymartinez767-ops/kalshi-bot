@@ -133,13 +133,14 @@ function YmcSignalPanel() {
     context?.sideways_watch ? 'Mercado lateral · esperar' :
     context?.pattern === 'RECHAZO_SUPERIOR' ? 'Presión bajista' :
     context?.pattern === 'RECHAZO_INFERIOR' ? 'Presión alcista' :
-    valid ? 'Sin giro temprano confirmado' : 'Esperando datos válidos'
+    valid ? 'Sin alerta temprana detectada' : 'Sin datos suficientes para evaluar'
   const trend = valid && ['ALCISTA', 'BAJISTA', 'ESPERAR'].includes(data!.direction) ? data!.direction : 'ESPERAR'
+  const signalState = isError ? 'ERROR DE CONEXIÓN' : isPending ? 'CONECTANDO' : !valid ? 'DATOS NO VALIDADOS' : trend === 'ESPERAR' ? 'SIN CONSENSO TÉCNICO' : 'TENDENCIA TÉCNICA'
   const ageSeconds = Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 1000)) : null
   return (
     <section className="shrink-0 border-b border-[#263443] bg-[#101923] px-3 py-2" aria-label="Señales IA" aria-live="polite">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold text-slate-300">IA · BTC</span>
+        <span className="text-[11px] font-semibold text-slate-300">IA · BTC · {signalState}</span>
         <span className="text-[10px] text-slate-500">{valid ? `Consulta cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
       </div>
       {!valid && !isPending && <div role="status" className="mt-1 text-[11px] text-amber-300">SEÑAL SUSPENDIDA · No usar la tendencia para decisiones hasta validar las velas.</div>}
@@ -153,7 +154,7 @@ function YmcSignalPanel() {
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
           <div className="text-[10px] text-slate-400">TENDENCIA</div>
           <div className={`text-base font-bold ${trend === 'ALCISTA' ? 'text-emerald-400' : trend === 'BAJISTA' ? 'text-rose-400' : 'text-slate-200'}`}>
-            {trend === 'ALCISTA' ? '↑ SUBE' : trend === 'BAJISTA' ? '↓ BAJA' : 'ESPERAR'}
+            {!valid ? 'SIN DATOS' : trend === 'ALCISTA' ? '↑ SUBE' : trend === 'BAJISTA' ? '↓ BAJA' : 'ESPERAR'}
           </div>
         </div>
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
@@ -170,7 +171,7 @@ function YmcSignalPanel() {
         <span className="shrink-0 text-[10px] text-slate-500">Vigilancia · no validada</span>
       </div>
       <div className="mt-1 text-[10px] text-slate-400">Patrón: {context?.pattern ?? "—"} · Volumen relativo: {typeof context?.volume_ratio_20 === "number" ? context.volume_ratio_20.toFixed(1) + "×" : "—"} · MACD: {valid && typeof data?.macd_hist === "number" ? data.macd_hist.toFixed(2) : "—"}</div>
-      <YmcHorizonScale valid={false} />
+      <YmcHorizonScale valid={valid} />
       <details className="mt-1 text-[11px] text-slate-400">
         <summary className="cursor-pointer">Radar de salida · opcional</summary>
         <EarlyExitRadar />
