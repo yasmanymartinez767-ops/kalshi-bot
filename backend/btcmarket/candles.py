@@ -76,7 +76,9 @@ def get_short_momentum() -> dict:
     latest_price = ticks[-1][1]
     for label, window_s in (("mom_5s", 5), ("mom_15s", 15), ("mom_30s", 30)):
         cutoff = now - timedelta(seconds=window_s)
-        past = next((p for t, p in ticks if t <= cutoff), None)
+        # Select the closest sample at/before the requested horizon, not the
+        # oldest sample in the deque (which made 5s/15s/30s nearly identical).
+        past = next((p for t, p in reversed(ticks) if t <= cutoff), None)
         result[label] = round(math.log(latest_price / past), 6) if past and past > 0 else None
     return result
 
