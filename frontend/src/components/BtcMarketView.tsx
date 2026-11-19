@@ -274,14 +274,14 @@ export function BtcMarketView() {
     refetchInterval: 5000,
   })
 
-  const { data: kalshiCandles, isError: kalshiCandlesError, error: kalshiCandlesFailure } = useQuery({
+  const { data: kalshiCandles, isPending: kalshiCandlesPending, isError: kalshiCandlesError, error: kalshiCandlesFailure } = useQuery({
     queryKey: ['btc-kalshi-candles', historyRange],
     queryFn: () => fetchKalshiCandles(historyRange),
     refetchInterval: 15000,
     retry: 1,
   })
 
-  const { data: snapshots, isError: snapshotsError, error: snapshotsFailure } = useQuery({
+  const { data: snapshots, isPending: snapshotsPending, isError: snapshotsError, error: snapshotsFailure } = useQuery({
     queryKey: ['btc-history', historyRange],
     queryFn: () => fetchBtcHistory(historyRange),
     refetchInterval: 15000,
@@ -325,7 +325,7 @@ export function BtcMarketView() {
         </ToolbarButton>
         <div className="flex-1" />
         <span className="text-[10px] text-[#9598a1]">
-          Kalshi historial · {snapshotsError ? 'Error puntos' : `${snapshots?.length ?? 0} puntos`} · {kalshiCandlesError ? 'Error velas' : `${kalshiCandles?.length ?? 0} velas`}
+          Kalshi historial · {snapshotsError ? 'Error puntos' : snapshotsPending ? 'Cargando puntos' : !snapshots?.length ? 'Sin puntos registrados' : `${snapshots.length} puntos`} · {kalshiCandlesError ? 'Error velas' : kalshiCandlesPending ? 'Cargando velas' : !kalshiCandles?.length ? 'Sin velas registradas' : `${kalshiCandles.length} velas`}
         </span>
       </div>
 
