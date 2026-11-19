@@ -63,6 +63,8 @@ def evaluate(candles, now=None):
             o,h,l,cl,v = (float(c[k]) for k in ("open","high","low","close","volume"))
             if not all(map(isfinite,(o,h,l,cl,v))) or min(o,h,l,cl)<=0 or v<0 or l>min(o,cl) or h<max(o,cl):
                 return wait("invalid_ohlcv")
+            if v == 0:
+                return wait("unverified_zero_volume_candle")
         close=[float(c["close"]) for c in rows]
     except (ValueError,TypeError,KeyError,OverflowError):
         return wait("malformed_candles")
