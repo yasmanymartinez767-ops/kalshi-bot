@@ -18,7 +18,18 @@ function YmcHorizonScale({ valid }: { valid: boolean }) {
   </div>
 }
 
+// The countdown must advance locally, independent of network/API response times.
+function useClock(): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 250)
+    return () => window.clearInterval(id)
+  }, [])
+  return now
+}
+
 function EarlyExitRadar() {
+  const clockNow = useClock()
   const [side, setSide] = useState<'YES' | 'NO'>('YES')
   const [entryCents, setEntryCents] = useState('')
   const [entryTicker, setEntryTicker] = useState('')
@@ -31,7 +42,7 @@ function EarlyExitRadar() {
   const market = data?.market
   const bid = side === 'YES' ? market?.yes_bid : market?.no_bid
   const ask = side === 'YES' ? market?.yes_ask : market?.no_ask
-  const timeLeftMs = market?.close_time ? Date.parse(market.close_time) - Date.now() : NaN
+  const timeLeftMs = market?.close_time ? Date.parse(market.close_time) - clockNow : NaN
   const active = Number.isFinite(timeLeftMs) && timeLeftMs > 0 &&
     !!market?.ticker && market.ticker.toUpperCase().includes('BTC')
   const fresh = !isError && !!market && !!dataUpdatedAt && Date.now() - dataUpdatedAt < 15000
@@ -91,7 +102,7 @@ function EarlyExitRadar() {
           </select>
         </label>
         {entryCents.trim() !== '' && !entryValid && <span className="text-[#e4b95b]">Entrada no válida para este contrato/lado: vuelve a introducirla</span>}
-        <span>Tiempo restante: <strong>{active ? timeRemaining(market?.close_time) : '—'}</strong></span>
+        <span>Tiempo restante: <strong>{active ? timeRemaining(market?.close_time, clockNow) : '—'}</strong></span>
         <span>Venta al bid: <strong className="text-[#e0edff]">{quoted ? (bid * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Spread: <strong>{quoted ? ((ask - bid) * 100).toFixed(1) + '¢' : '—'}</strong></span>
         <span>Movimiento bid (hasta 2m): <strong className={bidChangeCents !== null && bidChangeCents < 0 ? 'text-[#ef5350]' : 'text-[#9db4ca]'}>{bidChangeCents === null ? 'RECOPILANDO' : (bidChangeCents > 0 ? '+' : '') + bidChangeCents.toFixed(1) + '¢'}</strong></span>
@@ -163,9 +174,9 @@ function YmcSignalPanel() {
 
 const POLL_MS = 1000 // 1Hz, per spec: orderbook, BTC price, and candles all refresh every second
 
-function timeRemaining(closeTimeIso?: string): string {
+function timeRemaining(closeTimeIso?: string, now = Date.now()): string {
   if (!closeTimeIso) return '—'
-  const secs = Math.max(0, (new Date(closeTimeIso).getTime() - Date.now()) / 1000)
+  const secs = Math.max(0, (new Date(closeTimeIso).getTime() - now) / 1000)
   const m = Math.floor(secs / 60)
   const s = Math.floor(secs % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
@@ -192,6 +203,7 @@ function ToolbarButton({ active, onClick, children }: { active: boolean; onClick
 // ── header ────────────────────────────────────────────────────────────────────
 
 function MarketHeader() {
+  const clockNow = useClock()
   const { data } = useQuery({
     queryKey: ['btc-market'],
     queryFn: fetchBtcMarket,
@@ -212,7 +224,7 @@ function MarketHeader() {
     <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-2" aria-label="Pronóstico IA a 15 minutos">
       <div className="flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
         <span className="truncate">KALSHI BTC · 15M · {market.ticker}</span>
-        <span className="shrink-0">Cierra en <strong className="text-[#e0edff]">{timeRemaining(market.close_time)}</strong></span>
+        <span className="shrink-0">Cierra en <strong className="text-[#e0edff]">{timeRemaining(market.close_time, clockNow)}</strong></span>
       </div>
       <div className="mt-1 grid grid-cols-2 gap-2">
         <div className="rounded border border-[#176b55] bg-[#0a2524] px-2 py-1.5">
