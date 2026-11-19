@@ -165,6 +165,25 @@ async def get_ymc_technical(response: Response):
             result["tick_pressure"] = "MIXTA"
     else:
         result["tick_pressure"] = "NO_DISPONIBLE"
+    # Early intraminute *watch*, not a confirmed reversal: require a valid
+    # closed-candle baseline, opposing live pressure and a second exhaustion
+    # clue. Never issue it on stale or provisional candles.
+    result["intraminute_watch"] = "SIN_ALERTA"
+    result["intraminute_watch_validated"] = False
+    if result.get("validated") and result["tick_pressure"] != "NO_DISPONIBLE":
+        rsi = result.get("rsi14")
+        ctx = result.get("candle_context") or {}
+        pattern = ctx.get("pattern")
+        if (result.get("direction") == "ALCISTA"
+                and result["tick_pressure"] == "PRESION_VENDEDORA"
+                and (rsi is not None and rsi >= 65 or
+                     pattern in ("RECHAZO_SUPERIOR", "CONTINUACION_RECHAZO_BAJISTA"))):
+            result["intraminute_watch"] = "VIGILAR_GIRO_BAJISTA"
+        elif (result.get("direction") == "BAJISTA"
+                and result["tick_pressure"] == "PRESION_COMPRADORA"
+                and (rsi is not None and rsi <= 35 or
+                     pattern in ("RECHAZO_INFERIOR", "CONTINUACION_REBOTE"))):
+            result["intraminute_watch"] = "VIGILAR_GIRO_ALCISTA"
     result["tick_pressure_validated"] = False
     result["tick_age_seconds"] = round(tick_age, 2) if tick_age is not None else None
     result["momentum"] = momentum
