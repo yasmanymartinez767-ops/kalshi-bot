@@ -170,6 +170,12 @@ function YmcSignalPanel() {
         <span className="font-semibold text-slate-100">{insight}</span>
         <span className="shrink-0 text-[10px] text-slate-500">Vigilancia · no validada</span>
       </div>
+      {valid && (data as any)?.intraminute_watch && (data as any).intraminute_watch !== 'SIN_ALERTA' && (
+        <div role="status" className={`mt-2 rounded border px-3 py-2 ${(data as any).intraminute_watch === 'VIGILAR_GIRO_ALCISTA' ? 'border-emerald-700 bg-emerald-950/30 text-emerald-300' : 'border-rose-700 bg-rose-950/30 text-rose-300'}`}>
+          <div className="text-sm font-bold">{(data as any).intraminute_watch === 'VIGILAR_GIRO_ALCISTA' ? '↑ VIGILAR POSIBLE GIRO ALCISTA' : '↓ VIGILAR POSIBLE GIRO BAJISTA'}</div>
+          <div className="text-[10px]">Presión rápida contraria a la tendencia y agotamiento. Observación experimental; no es señal de entrada.</div>
+        </div>
+      )}
       <div className="mt-1 text-[11px] font-medium text-slate-300">
         Presión rápida (5/15/30s): {data?.tick_pressure === 'PRESION_COMPRADORA' ? '↑ Compradora' :
           data?.tick_pressure === 'PRESION_VENDEDORA' ? '↓ Vendedora' :
