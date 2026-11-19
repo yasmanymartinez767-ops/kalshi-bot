@@ -108,3 +108,11 @@ export async function fetchYmcTechnical(): Promise<{
   const { data } = await api.get('/btc/ymc-technical')
   return data
 }
+
+export async function fetchOpenAiReview(): Promise<{
+  status: string; direction?: string; analysis: string | null; risk?: string;
+  as_of_utc?: string; validated_prediction?: boolean
+}> {
+  const { data } = await api.get('/btc/openai-review')
+  return data
+}
