@@ -124,7 +124,7 @@ export function BtcCandlestickChart({
     })))
 
     const markers: SeriesMarker<Time>[] = showPatterns
-      ? detectPatterns(unique).slice(-12).filter((_, i) => i % 3 === 0).map(p => ({
+      ? detectPatterns(unique).slice(-12).map(p => ({
           time: p.time as Time,
           position: p.bullish ? 'belowBar' : 'aboveBar',
           color: p.bullish ? UP : DOWN,
