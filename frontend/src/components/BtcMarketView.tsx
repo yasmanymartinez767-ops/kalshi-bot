@@ -5,7 +5,7 @@ import { fetchBtcCandles, fetchBtcMarket, fetchBtcHistory, fetchKalshiCandles, f
 import { BtcCandlestickChart } from './BtcCandlestickChart'
 import { BtcProbabilityChart } from './BtcProbabilityChart'
 
-type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean; candle_context?: { pattern: string; sideways_watch: boolean; volume_ratio_20: number | null; volume_elevated: boolean; pattern_validated: boolean } }
+type YmcSignal = { direction: string; votes: number | null; validated: boolean; reason: string; rsi14?: number; ema9?: number; ema21?: number; macd_hist?: number; as_of_utc: string; source: string; settlement_price_warning: string; early_watch?: string; early_watch_validated?: boolean; leading_watch?: string; leading_watch_validated?: boolean; candle_context?: { pattern: string; sideways_watch: boolean; volume_ratio_20: number | null; volume_elevated: boolean; pattern_validated: boolean } }
 
 // Future horizons are intentionally not inferred from the current 1m vote count.
 // A probability requires a separate, calibrated 5m/10m/15m forecasting model.
@@ -125,6 +125,7 @@ function YmcSignalPanel() {
   const valid = !isError && data?.validated === true && Number.isInteger(data?.votes) && data!.votes! >= 0 && data!.votes! <= 5 && Number.isFinite(timestamp) &&
     Date.now() - timestamp >= 0 && Date.now() - timestamp <= 150000
   const watch = valid ? data?.early_watch : undefined
+  const leading = valid ? data?.leading_watch : undefined
   const context = valid ? data?.candle_context : undefined
   const insight = watch === 'POSIBLE_AGOTAMIENTO_ALCISTA' ? 'Posible giro bajista' :
     watch === 'POSIBLE_AGOTAMIENTO_BAJISTA' ? 'Posible giro alcista' :
@@ -142,6 +143,12 @@ function YmcSignalPanel() {
         <span className="text-[10px] text-slate-500">{valid ? `Consulta cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
       </div>
       {!valid && !isPending && <div role="status" className="mt-1 text-[11px] text-amber-300">SEÑAL SUSPENDIDA · No usar la tendencia para decisiones hasta validar las velas.</div>}
+      {valid && leading && leading !== 'SIN_ALERTA' && (
+        <div role="status" className={`mt-2 rounded border px-3 py-2 ${leading === 'POSIBLE_SUBIDA' ? 'border-emerald-700 bg-emerald-950/40 text-emerald-300' : 'border-rose-700 bg-rose-950/40 text-rose-300'}`}>
+          <div className="text-sm font-bold">{leading === 'POSIBLE_SUBIDA' ? '↑ ALERTA TEMPRANA · POSIBLE SUBIDA' : '↓ ALERTA TEMPRANA · POSIBLE BAJADA'}</div>
+          <div className="text-[10px]">Rechazo de vela + volumen elevado. Vigilancia heurística sin porcentaje calibrado; no es confirmación de entrada.</div>
+        </div>
+      )}
       <div className="mt-1 grid grid-cols-3 gap-2">
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
           <div className="text-[10px] text-slate-400">TENDENCIA</div>
