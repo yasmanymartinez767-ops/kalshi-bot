@@ -1,5 +1,8 @@
 """FastAPI backend for Kalshi weather temperature trading bot."""
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -226,14 +229,18 @@ async def shutdown():
 # Core endpoints
 # ---------------------------------------------------------------------------
 
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if (FRONTEND_DIST / "assets").is_dir():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="frontend-assets")
+
+
 @app.get("/")
 async def root():
-    return {
-        "status": "ok",
-        "version": "4.0.0",
-        "platform": "kalshi",
-        "simulation_mode": settings.SIMULATION_MODE,
-    }
+    """Serve the YMC React interface; API health remains at /api/health."""
+    index = FRONTEND_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(str(index), headers={"Cache-Control": "no-cache"})
+    return {"status": "frontend_not_built", "api": "/api/health"}
 
 
 @app.get("/api/health")
