@@ -103,7 +103,23 @@ def evaluate(candles, now=None):
         warning = "POSIBLE_AGOTAMIENTO_BAJISTA"
     elif span > 0 and body / span <= 0.2 and abs(close[-1] - close[-2]) > 0:
         warning = "INDECISION"
+    # A separate *leading* watch is not gated on the lagging EMA trend vote.
+    # It requires two independent observations: candle rejection/follow-through
+    # and above-normal volume. This is a heuristic, NOT a calibrated likelihood.
+    ctx = candle_context(rows, rsi, e9[-1], e21[-1])
+    leading = "SIN_ALERTA"
+    if ctx["volume_elevated"]:
+        if ctx["pattern"] in ("RECHAZO_INFERIOR", "CONTINUACION_REBOTE"):
+            leading = "POSIBLE_SUBIDA"
+        elif ctx["pattern"] in ("RECHAZO_SUPERIOR", "CONTINUACION_RECHAZO_BAJISTA"):
+            leading = "POSIBLE_BAJADA"
+    if leading == "SIN_ALERTA":
+        if warning == "POSIBLE_AGOTAMIENTO_BAJISTA" and ctx["volume_elevated"]:
+            leading = "POSIBLE_SUBIDA"
+        elif warning == "POSIBLE_AGOTAMIENTO_ALCISTA" and ctx["volume_elevated"]:
+            leading = "POSIBLE_BAJADA"
     return {"direction":direction,"votes":votes,"reason":"technical_votes_not_probability",
             "early_watch":warning,"early_watch_validated":False,
+            "leading_watch":leading,"leading_watch_validated":False,
             "validated":True,"rsi14":round(rsi,2),"ema9":e9[-1],"ema21":e21[-1],
-            "macd_hist":hist,"candle_context":candle_context(rows,rsi,e9[-1],e21[-1]),"as_of_utc":datetime.fromtimestamp(ts[-1]+60,timezone.utc).isoformat()}
+            "macd_hist":hist,"candle_context":ctx,"as_of_utc":datetime.fromtimestamp(ts[-1]+60,timezone.utc).isoformat()}
