@@ -114,6 +114,24 @@ async def get_signal():
     return {"signal": asdict(signal)}
 
 
+@router.get("/momentum-health")
+async def get_momentum_health(response: Response):
+    """Read-only 5/15/30s momentum with tick freshness; not a forecast."""
+    from datetime import datetime, timezone
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    tick = candles_mod.get_latest_tick()
+    now = datetime.now(timezone.utc)
+    age = (now.replace(tzinfo=None) - tick[0]).total_seconds() if tick else None
+    return {
+        "source": "Coinbase BTC-USD ticker",
+        "latest_tick_age_seconds": round(age, 2) if age is not None else None,
+        "tick_fresh": age is not None and 0 <= age <= 5,
+        "momentum": candles_mod.get_short_momentum(),
+        "predictive_probability_calibrated": False,
+        "automatic_trading": False,
+    }
+
+
 @router.get("/ymc-technical")
 async def get_ymc_technical(response: Response):
     """Coinbase BTC-USD technical votes from closed 1m candles; not a Kalshi settlement forecast."""
