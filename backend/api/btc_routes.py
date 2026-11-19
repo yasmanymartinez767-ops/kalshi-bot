@@ -148,6 +148,26 @@ async def get_ymc_technical(response: Response):
     if result["validated"] and any(c["volume"] <= 0 for c in closed[-40:]):
         result = evaluate([], now=now)
         result["reason"] = "unverified_provisional_candles"
+    # Tick momentum is a separate live observation, not a forecast or a
+    # replacement for validated closed-candle signals.
+    momentum = candles_mod.get_short_momentum()
+    tick = candles_mod.get_latest_tick()
+    tick_age = (datetime.now(timezone.utc).replace(tzinfo=None) - tick[0]).total_seconds() if tick else None
+    momentum_fresh = tick_age is not None and 0 <= tick_age <= 5
+    m5, m15, m30 = (momentum.get(k) for k in ("mom_5s", "mom_15s", "mom_30s"))
+    if momentum_fresh and all(v is not None for v in (m5, m15, m30)):
+        # Agreement across three windows is a descriptive pressure flag.
+        if m5 > 0 and m15 > 0 and m30 > 0:
+            result["tick_pressure"] = "PRESION_COMPRADORA"
+        elif m5 < 0 and m15 < 0 and m30 < 0:
+            result["tick_pressure"] = "PRESION_VENDEDORA"
+        else:
+            result["tick_pressure"] = "MIXTA"
+    else:
+        result["tick_pressure"] = "NO_DISPONIBLE"
+    result["tick_pressure_validated"] = False
+    result["tick_age_seconds"] = round(tick_age, 2) if tick_age is not None else None
+    result["momentum"] = momentum
     result["source"] = "Coinbase BTC-USD"
     result["timeframe"] = "1m"
     result["indicators"] = {"ema_fast": 9, "ema_slow": 21, "rsi": 14,
