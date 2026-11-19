@@ -165,6 +165,13 @@ async def get_btc_diagnostics():
             "technical_validated": technical["validated"],
             "technical_reason": technical["reason"],
             "technical_votes": technical["votes"],
+            "last_closed_candle_utc": datetime.fromtimestamp(closed[-1]["time"] + 60, timezone.utc).isoformat() if closed else None,
+            "last_closed_volume": float(closed[-1]["volume"]) if closed else None,
+            "last_40_candle_gaps": sum(b["time"] - a["time"] != 60 for a, b in zip(closed[-40:], closed[-39:])),
+            "pattern": (technical.get("candle_context") or {}).get("pattern"),
+            "early_watch": technical.get("early_watch"),
+            "pattern_as_of_utc": technical.get("as_of_utc") if technical.get("validated") else None,
+            "technical_usable": bool(technical["validated"] and all(float(c["volume"]) > 0 for c in closed[-40:])),
             "paid_openai_enabled": False,
             "openai_forecast_calibrated": False,
         }
