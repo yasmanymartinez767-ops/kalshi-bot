@@ -128,8 +128,9 @@ function YmcSignalPanel() {
     <section className="shrink-0 border-b border-[#263443] bg-[#101923] px-3 py-2" aria-label="Señales IA" aria-live="polite">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold text-slate-300">IA · BTC</span>
-        <span className="text-[10px] text-slate-500">{valid ? `Indicadores actualizados cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
+        <span className="text-[10px] text-slate-500">{valid ? `Consulta cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
       </div>
+      {!valid && !isPending && <div role="status" className="mt-1 text-[11px] text-amber-300">SEÑAL SUSPENDIDA · No usar la tendencia para decisiones hasta validar las velas.</div>}
       <div className="mt-1 grid grid-cols-3 gap-2">
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
           <div className="text-[10px] text-slate-400">TENDENCIA</div>
