@@ -212,6 +212,20 @@ function ToolbarButton({ active, onClick, children }: { active: boolean; onClick
 
 function MarketHeader() {
   const clockNow = useClock()
+  const { data: technical, isError: technicalError } = useQuery<YmcSignal>({
+    queryKey: ['ymc-technical'], queryFn: fetchYmcTechnical,
+    refetchInterval: 5000, staleTime: 3000, retry: 1,
+  })
+  const technicalAt = technical?.as_of_utc ? Date.parse(technical.as_of_utc) : NaN
+  const technicalValid = !technicalError && technical?.validated === true &&
+    Number.isInteger(technical?.votes) && Number.isFinite(technicalAt) &&
+    clockNow - technicalAt >= 0 && clockNow - technicalAt <= 150000
+  const leadingUp = technicalValid && technical?.leading_watch === 'POSIBLE_SUBIDA'
+  const leadingDown = technicalValid && technical?.leading_watch === 'POSIBLE_BAJADA'
+  const upState = !technicalValid ? 'SIN DATOS VÁLIDOS' : leadingUp ? 'POSIBLE SUBIDA · ALERTA' :
+    technical!.direction === 'ALCISTA' ? 'TENDENCIA ALCISTA' : 'SIN SEÑAL ALCISTA'
+  const downState = !technicalValid ? 'SIN DATOS VÁLIDOS' : leadingDown ? 'POSIBLE BAJADA · ALERTA' :
+    technical!.direction === 'BAJISTA' ? 'TENDENCIA BAJISTA' : 'SIN SEÑAL BAJISTA'
   const { data } = useQuery({
     queryKey: ['btc-market'],
     queryFn: fetchBtcMarket,
@@ -237,12 +251,12 @@ function MarketHeader() {
       <div className="mt-1 grid grid-cols-2 gap-2">
         <div className="rounded border border-[#176b55] bg-[#0a2524] px-2 py-1.5">
           <div className="text-xs font-bold text-emerald-400">↑ SUBE</div>
-          <div className="text-sm font-bold text-emerald-300">EN EVALUACIÓN</div>
+          <div className="text-sm font-bold text-emerald-300">{upState}</div>
           
         </div>
         <div className="rounded border border-[#823747] bg-[#29151f] px-2 py-1.5">
           <div className="text-xs font-bold text-rose-400">↓ BAJA</div>
-          <div className="text-sm font-bold text-rose-300">EN EVALUACIÓN</div>
+          <div className="text-sm font-bold text-rose-300">{downState}</div>
           
         </div>
       </div>
