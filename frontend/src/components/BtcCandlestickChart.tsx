@@ -27,6 +27,7 @@ export function BtcCandlestickChart({
   const volumeRef = useRef<ISeriesApi<'Histogram'> | null>(null)
   const lastKeyRef = useRef(viewKey)
   const initializedRef = useRef(false)
+  const lastCountRef = useRef(0)
 
   useEffect(() => {
     const container = containerRef.current
@@ -99,6 +100,8 @@ export function BtcCandlestickChart({
     const visibleRange = initializedRef.current && !changedInterval
       ? chart.timeScale().getVisibleLogicalRange()
       : null
+    const previousCount = lastCountRef.current
+    const followLive = !visibleRange || visibleRange.to >= previousCount - 3
 
     // Normalize, sort and deduplicate. Never manufacture missing candles.
     const valid = candles.filter(c =>
@@ -134,7 +137,8 @@ export function BtcCandlestickChart({
 
     if (unique.length > 0) {
       if (visibleRange && Number.isFinite(visibleRange.from) && Number.isFinite(visibleRange.to)) {
-        chart.timeScale().setVisibleLogicalRange(visibleRange)
+        const shift = followLive ? Math.max(0, unique.length - previousCount) : 0
+        chart.timeScale().setVisibleLogicalRange({ from: visibleRange.from + shift, to: visibleRange.to + shift })
       } else {
         // Display recent candles at readable width instead of compressing days of history.
         chart.timeScale().setVisibleLogicalRange({
@@ -143,6 +147,7 @@ export function BtcCandlestickChart({
         })
       }
       initializedRef.current = true
+      lastCountRef.current = unique.length
     }
   }, [candles, showPatterns, viewKey])
 
