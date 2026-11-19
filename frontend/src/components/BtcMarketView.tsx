@@ -10,18 +10,12 @@ type YmcSignal = { direction: string; votes: number | null; validated: boolean; 
 // Future horizons are intentionally not inferred from the current 1m vote count.
 // A probability requires a separate, calibrated 5m/10m/15m forecasting model.
 function YmcHorizonScale({ valid }: { valid: boolean }) {
-  return (
-    <div className="mt-2 grid grid-cols-3 gap-1.5" aria-label="Escala predictiva por horizonte">
-      {([5, 10, 15] as const).map(minutes => (
-        <div key={minutes} className="min-w-0 rounded border border-[#254158] bg-[#071626] px-2 py-1.5 text-center">
-          <div className="text-[10px] font-bold text-[#e4b95b]">{minutes} MIN</div>
-          <div className="text-[16px] font-bold tabular-nums text-[#9db4ca]">—%</div>
-          <div className="text-[10px] text-[#9db4ca]">{valid ? 'EN EVALUACIÓN' : 'SIN DATOS'}</div>
-        </div>
-      ))}
-      <div className="col-span-3 text-[10px] text-[#9598a1]">Probabilidad de SUBE/BAJA por horizonte: pendiente de modelo calibrado. No confundir votos técnicos con porcentajes.</div>
-    </div>
-  )
+  return <div className="mt-2 grid grid-cols-3 gap-1.5" aria-label="Horizontes predictivos">
+    {([5, 10, 15] as const).map(minutes => <div key={minutes} className="rounded border border-[#2b3948] px-2 py-1 flex items-center justify-between gap-1">
+      <span className="text-xs font-semibold text-slate-200">{minutes}m</span>
+      <span className="text-[10px] text-slate-400">{valid ? 'EVALUANDO' : '—'}</span>
+    </div>)}
+  </div>
 }
 
 function EarlyExitRadar() {
@@ -112,46 +106,55 @@ function EarlyExitRadar() {
 }
 
 function YmcSignalPanel() {
-  const { data, isError, isPending, isFetching, dataUpdatedAt } = useQuery<YmcSignal>({
-    queryKey: ['ymc-technical'],
-    queryFn: fetchYmcTechnical,
-    refetchInterval: 10000,
-    staleTime: 5000,
-    retry: 1,
+  const { data, isError, isPending } = useQuery<YmcSignal>({
+    queryKey: ['ymc-technical'], queryFn: fetchYmcTechnical,
+    refetchInterval: 10000, staleTime: 5000, retry: 1,
   })
-  const valid = !isError && data?.validated === true && Number.isFinite(Date.parse(data.as_of_utc)) && Date.now() - Date.parse(data.as_of_utc) >= 0 && Date.now() - Date.parse(data.as_of_utc) <= 150000
-  const status = isPending ? 'CONECTANDO' : isError ? 'SIN CONEXIÓN' : !valid ? (data?.reason ?? 'DATOS NO VÁLIDOS') : isFetching ? 'ACTUALIZANDO' : 'DATOS VALIDADOS'
-  const direction = valid ? data!.direction : 'ESPERAR'
+  const timestamp = data?.as_of_utc ? Date.parse(data.as_of_utc) : NaN
+  const valid = !isError && data?.validated === true && Number.isFinite(timestamp) &&
+    Date.now() - timestamp >= 0 && Date.now() - timestamp <= 150000
+  const watch = valid ? data?.early_watch : undefined
+  const context = valid ? data?.candle_context : undefined
+  const insight = watch === 'POSIBLE_AGOTAMIENTO_ALCISTA' ? 'Posible giro bajista' :
+    watch === 'POSIBLE_AGOTAMIENTO_BAJISTA' ? 'Posible giro alcista' :
+    watch === 'INDECISION' ? 'Indecisión · esperar' :
+    context?.sideways_watch ? 'Mercado lateral · esperar' :
+    context?.pattern === 'RECHAZO_SUPERIOR' ? 'Presión bajista' :
+    context?.pattern === 'RECHAZO_INFERIOR' ? 'Presión alcista' :
+    valid ? 'Sin giro temprano confirmado' : 'Esperando datos válidos'
+  const trend = valid ? data!.direction : 'ESPERAR'
   return (
-    <div className="shrink-0 border-b border-[#254158] bg-[#041321] px-3 py-2 text-[11px]" translate="no" aria-live="polite">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-        <span className="font-bold text-[#e4b95b]">♛ YMC · IA TÉCNICA</span>
-        <span className={direction === 'ALCISTA' ? 'text-[#26a69a] font-bold' : direction === 'BAJISTA' ? 'text-[#ef5350] font-bold' : 'text-[#9db4ca] font-bold'}>{direction}</span>
-        <span>Votos: {valid ? data!.votes : '—'}/5</span>
-        <span>EMA 9/21: {valid ? data!.ema9?.toFixed(2) : '—'} / {valid ? data!.ema21?.toFixed(2) : '—'}</span>
-        <span>RSI 14: {valid ? data!.rsi14?.toFixed(1) : '—'}</span>
-        <span>MACD (12,26,9): {valid ? data!.macd_hist?.toFixed(3) : '—'}</span>
-        <span className="text-[#9db4ca]">Coinbase 1m · {status} {valid ? '· ' + data!.as_of_utc.slice(11, 19) + ' UTC' : ''}</span>
+    <section className="shrink-0 border-b border-[#263443] bg-[#101923] px-3 py-2" aria-label="Señales IA" aria-live="polite">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold text-slate-300">IA · BTC</span>
+        <span className="text-[10px] text-slate-500">{valid ? 'Datos válidos · señal exploratoria' : isPending ? 'Conectando' : 'Sin señal válida'}</span>
       </div>
-      <details className="mt-2 rounded border border-[#254158] bg-[#071626] px-2 py-1.5">
-        <summary className="cursor-pointer select-none text-[11px] font-semibold text-[#e4b95b]">Radar Kalshi · objetivos de salida · horizontes 5/10/15m</summary>
-        <YmcHorizonScale valid={valid} />
+      <div className="mt-1 grid grid-cols-3 gap-2">
+        <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
+          <div className="text-[10px] text-slate-400">TENDENCIA</div>
+          <div className={`text-base font-bold ${trend === 'ALCISTA' ? 'text-emerald-400' : trend === 'BAJISTA' ? 'text-rose-400' : 'text-slate-200'}`}>
+            {trend === 'ALCISTA' ? '↑ SUBE' : trend === 'BAJISTA' ? '↓ BAJA' : 'ESPERAR'}
+          </div>
+        </div>
+        <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
+          <div className="text-[10px] text-slate-400">VOTOS</div>
+          <div className="text-base font-bold text-slate-100">{valid ? data!.votes : '—'}/5</div>
+        </div>
+        <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
+          <div className="text-[10px] text-slate-400">RSI</div>
+          <div className="text-base font-bold text-slate-100">{valid ? data!.rsi14?.toFixed(0) : '—'}</div>
+        </div>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+        <span className="font-semibold text-slate-100">{insight}</span>
+        <span className="shrink-0 text-[10px] text-slate-500">Alerta temprana · no confirmada</span>
+      </div>
+      <YmcHorizonScale valid={valid} />
+      <details className="mt-1 text-[11px] text-slate-400">
+        <summary className="cursor-pointer">Radar de salida · opcional</summary>
         <EarlyExitRadar />
       </details>
-      {valid && data?.early_watch && data.early_watch !== 'NINGUNA' && (
-        <div className="mt-1 text-[11px] text-[#e4b95b]">Vigilancia temprana: {data.early_watch.split('_').join(' ')} · Patrón exploratorio, sin precisión validada</div>
-      )}
-      {valid && data?.candle_context && (
-        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px]" aria-label="Análisis de velas cerradas">
-          <span className="text-[#e4b95b]">Patrón 1m: {data.candle_context.pattern.split('_').join(' ')}</span>
-          <span>Volumen / promedio 20m: {data.candle_context.volume_ratio_20 == null ? '—' : data.candle_context.volume_ratio_20.toFixed(2) + 'x'}</span>
-          {data.candle_context.volume_elevated && <span className="text-[#e4b95b]">VOLUMEN ELEVADO</span>}
-          {data.candle_context.sideways_watch && <span className="text-[#e4b95b]">POSIBLE MERCADO LATERAL · ESPERAR</span>}
-          <span className="text-[#9db4ca]">Observación exploratoria, no predicción validada</span>
-        </div>
-      )}
-      <div className="text-[10px] text-[#9598a1] mt-1">{dataUpdatedAt ? `Última consulta: ${new Date(dataUpdatedAt).toLocaleTimeString()}. ` : ""}Señal técnica informativa, no probabilidad ni recomendación de entrada. Coinbase spot ≠ referencia de liquidación Kalshi.</div>
-    </div>
+    </section>
   )
 }
 
@@ -216,11 +219,7 @@ function MarketHeader() {
         </span>
         <span className="ml-2 text-[10px] text-[#9db4ca]">{market.ticker}</span>
       </div>
-      <div className="text-[11px]">
-        <span className="text-[#9db4ca] mr-1">Target</span>
-        <span className="text-[#ff9800] font-medium tabular-nums">{usd(market.floor_strike)}</span>
-      </div>
-      <div className="text-[11px]">
+<div className="text-[11px]">
         <span className="text-[#9db4ca] mr-1">YES</span>
         <span className="text-[#26a69a] font-medium tabular-nums">{yesMidPct}%</span>
         <span className="text-[#9598a1] ml-1">
@@ -258,7 +257,6 @@ function ChartPanel({ title, children }: { title: string; children: React.ReactN
 
 const INTERVALS: { key: BtcInterval; label: string }[] = [
   { key: '1m', label: '1m' }, { key: '5m', label: '5m' }, { key: '15m', label: '15m' },
-  { key: '1h', label: '1H' }, { key: '6h', label: '6H' }, { key: '1d', label: '1D' },
 ]
 const LOOKBACKS: { key: BtcLookback; label: string }[] = [
   { key: '1d', label: '1D' }, { key: '3d', label: '3D' }, { key: '1w', label: '1W' }, { key: '1m', label: '1M' },
@@ -342,7 +340,7 @@ export function BtcMarketView() {
 
       {/* Prioritize one readable BTC chart on mobile; secondary charts are opt-in. */}
       <div className={`shrink-0 grid grid-cols-1 gap-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto ${showExtraCharts ? "lg:grid-cols-2 lg:grid-rows-2" : "lg:grid-cols-1"}`}>
-        <div className="border-b border-r border-[#254158] min-h-0 h-[min(64vh,520px)] min-h-[330px] lg:h-auto">
+        <div className="border-b border-r border-[#254158] min-h-0 h-[min(55vh,460px)] min-h-[280px] lg:h-auto">
           <ChartPanel title="BTC/USD Candlestick (Coinbase)">
             <BtcCandlestickChart candles={candles ?? []} showPatterns={showPatterns} viewKey={viewKey} />
           </ChartPanel>
