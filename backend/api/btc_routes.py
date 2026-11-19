@@ -132,3 +132,22 @@ async def get_history_status():
         }
     finally:
         db.close()
+
+
+@router.get("/openai-review")
+async def get_openai_review():
+    """Optional second-opinion model; never an order or calibrated probability."""
+    from datetime import datetime, timezone
+    from backend.btcmarket.ymc_signal import evaluate
+    from backend.btcmarket.openai_review import review
+    await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
+    rows = candles_mod.get_cached_candles(60, timedelta(hours=3))
+    now = datetime.now(timezone.utc).timestamp()
+    closed = [c for c in rows if c["time"] + 60 < now]
+    technical = evaluate(closed, now=now)
+    if technical.get("validated") and any(c["volume"] <= 0 for c in closed[-40:]):
+        technical = {"validated": False}
+    if not technical.get("validated"):
+        return {"status": "insufficient_data", "analysis": None}
+    market = await kalshi_poll.get_current_market()
+    return await review(technical, closed, market)
