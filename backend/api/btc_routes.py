@@ -96,7 +96,7 @@ async def get_ymc_technical(response: Response):
     candles = candles_mod.get_cached_candles(60, timedelta(hours=3))
     now = datetime.now(timezone.utc).timestamp()
     # Exclude the currently forming candle inserted by the live-price poller.
-    closed = [c for c in candles if c["time"] + 60 < now]
+    closed = [c for c in candles if c["time"] + 60 <= now - 2]
     result = evaluate(closed, now=now)
     # Poller placeholders have zero volume; do not treat them as Coinbase OHLCV.
     if result["validated"] and any(c["volume"] <= 0 for c in closed[-40:]):
@@ -156,7 +156,7 @@ async def get_btc_diagnostics(response: Response):
     try:
         await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
         rows = candles_mod.get_cached_candles(60, timedelta(hours=3))
-        closed = [c for c in rows if c["time"] + 60 < now]
+        closed = [c for c in rows if c["time"] + 60 <= now - 2]
         technical = evaluate(closed, now=now)
         return {
             "server_utc": datetime.fromtimestamp(now, timezone.utc).isoformat(),
