@@ -1,5 +1,8 @@
 """API routes for the KXBTC15M market data module: candles, live market, and orderbook history."""
 from datetime import timedelta
+import asyncio
+import logging
+import time
 
 from fastapi import APIRouter, Response
 
@@ -7,6 +10,31 @@ from backend.btcmarket import candles as candles_mod
 from backend.btcmarket import kalshi_poll
 
 router = APIRouter(prefix="/api/btc", tags=["btc"])
+
+# Shared refresh throttle: multiple Android panels poll the same 1m data.
+# Avoid duplicate Coinbase requests and slow/hung API responses every 5 seconds.
+_refresh_lock = asyncio.Lock()
+_last_refresh_monotonic = 0.0
+_REFRESH_INTERVAL_SECONDS = 20.0
+_logger = logging.getLogger("trading_bot")
+
+
+async def _refresh_technical_candles():
+    global _last_refresh_monotonic
+    if time.monotonic() - _last_refresh_monotonic < _REFRESH_INTERVAL_SECONDS:
+        return
+    async with _refresh_lock:
+        if time.monotonic() - _last_refresh_monotonic < _REFRESH_INTERVAL_SECONDS:
+            return
+        # Set the throttle even if Coinbase is unavailable: avoid a request storm.
+        _last_refresh_monotonic = time.monotonic()
+        try:
+            await asyncio.wait_for(
+                candles_mod.ensure_recent_candles(60, timedelta(hours=3)),
+                timeout=12.0,
+            )
+        except Exception as exc:
+            _logger.warning("YMC technical refresh unavailable; using cached candles: %s", exc)
 
 HISTORY_RANGES = {
     "1h": timedelta(hours=1),
@@ -92,7 +120,7 @@ async def get_ymc_technical(response: Response):
     response.headers["Cache-Control"] = "no-store, max-age=0"
     from datetime import datetime, timezone
     from backend.btcmarket.ymc_signal import evaluate
-    await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
+    await _refresh_technical_candles()
     candles = candles_mod.get_cached_candles(60, timedelta(hours=3))
     now = datetime.now(timezone.utc).timestamp()
     # Exclude the currently forming candle inserted by the live-price poller.
@@ -154,7 +182,7 @@ async def get_btc_diagnostics(response: Response):
     from backend.btcmarket.ymc_signal import evaluate
     now = datetime.now(timezone.utc).timestamp()
     try:
-        await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
+        await _refresh_technical_candles()
         rows = candles_mod.get_cached_candles(60, timedelta(hours=3))
         closed = [c for c in rows if c["time"] + 60 <= now - 2]
         technical = evaluate(closed, now=now)
