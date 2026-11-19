@@ -111,7 +111,7 @@ function YmcSignalPanel() {
     refetchInterval: 5000, staleTime: 3000, retry: 1,
   })
   const timestamp = data?.as_of_utc ? Date.parse(data.as_of_utc) : NaN
-  const valid = !isError && data?.validated === true && Number.isFinite(timestamp) &&
+  const valid = !isError && data?.validated === true && Number.isInteger(data?.votes) && data!.votes! >= 0 && data!.votes! <= 5 && Number.isFinite(timestamp) &&
     Date.now() - timestamp >= 0 && Date.now() - timestamp <= 150000
   const watch = valid ? data?.early_watch : undefined
   const context = valid ? data?.candle_context : undefined
@@ -128,7 +128,7 @@ function YmcSignalPanel() {
     <section className="shrink-0 border-b border-[#263443] bg-[#101923] px-3 py-2" aria-label="Señales IA" aria-live="polite">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold text-slate-300">IA · BTC</span>
-        <span className="text-[10px] text-slate-500">{valid ? `Analizando cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'revisar conexión'}`}</span>
+        <span className="text-[10px] text-slate-500">{valid ? `Analizando cada 5s · última vela ${ageSeconds ?? '—'}s` : isPending ? 'Conectando' : `Sin señal válida · ${data?.reason ?? 'indicadores incompletos'}`}</span>
       </div>
       <div className="mt-1 grid grid-cols-3 gap-2">
         <div className="rounded border border-[#2b3948] bg-[#0c1520] p-2">
