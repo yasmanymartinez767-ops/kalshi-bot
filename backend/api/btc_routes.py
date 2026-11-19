@@ -1,7 +1,7 @@
 """API routes for the KXBTC15M market data module: candles, live market, and orderbook history."""
 from datetime import timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
 from backend.btcmarket import candles as candles_mod
 from backend.btcmarket import kalshi_poll
@@ -87,8 +87,9 @@ async def get_signal():
 
 
 @router.get("/ymc-technical")
-async def get_ymc_technical():
+async def get_ymc_technical(response: Response):
     """Coinbase BTC-USD technical votes from closed 1m candles; not a Kalshi settlement forecast."""
+    response.headers["Cache-Control"] = "no-store, max-age=0"
     from datetime import datetime, timezone
     from backend.btcmarket.ymc_signal import evaluate
     await candles_mod.ensure_recent_candles(60, timedelta(hours=3))
@@ -146,8 +147,9 @@ async def get_openai_review():
 
 
 @router.get("/diagnostics")
-async def get_btc_diagnostics():
+async def get_btc_diagnostics(response: Response):
     """Read-only data health report. Never exposes secrets or places orders."""
+    response.headers["Cache-Control"] = "no-store, max-age=0"
     from datetime import datetime, timezone
     from backend.btcmarket.ymc_signal import evaluate
     now = datetime.now(timezone.utc).timestamp()
