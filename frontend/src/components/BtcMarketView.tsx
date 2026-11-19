@@ -160,11 +160,6 @@ function YmcSignalPanel() {
 
 const POLL_MS = 1000 // 1Hz, per spec: orderbook, BTC price, and candles all refresh every second
 
-function usd(n: number | null | undefined, decimals = 2) {
-  if (n === null || n === undefined) return '—'
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`
-}
-
 function timeRemaining(closeTimeIso?: string): string {
   if (!closeTimeIso) return '—'
   const secs = Math.max(0, (new Date(closeTimeIso).getTime() - Date.now()) / 1000)
