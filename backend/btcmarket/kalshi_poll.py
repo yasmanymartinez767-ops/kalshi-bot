@@ -87,20 +87,25 @@ async def poll_and_record() -> Optional[dict]:
         "btc_price": _latest_btc_price(),
     }
 
-    yes_mid = (snapshot["yes_bid"] + snapshot["yes_ask"]) / 2
+    # Missing top-of-book prices are represented as zero by the upstream parser.
+    # Do not manufacture a 0-cent YES candle from an empty or crossed orderbook.
+    bid, ask = snapshot["yes_bid"], snapshot["yes_ask"]
+    valid_yes_quote = 0 < bid <= ask <= 1
+    yes_mid = (bid + ask) / 2 if valid_yes_quote else None
     bucket = snapshot["timestamp"].replace(second=0, microsecond=0)
 
     db = SessionLocal()
     try:
         db.add(KxBtcSnapshot(**snapshot))
 
-        row = db.query(KxBtcCandle).filter(KxBtcCandle.open_time == bucket).first()
-        if row:
-            row.high = max(row.high, yes_mid)
-            row.low = min(row.low, yes_mid)
-            row.close = yes_mid
-        else:
-            db.add(KxBtcCandle(open_time=bucket, open=yes_mid, high=yes_mid, low=yes_mid, close=yes_mid, volume=0.0))
+        if valid_yes_quote:
+            row = db.query(KxBtcCandle).filter(KxBtcCandle.open_time == bucket).first()
+            if row:
+                row.high = max(row.high, yes_mid)
+                row.low = min(row.low, yes_mid)
+                row.close = yes_mid
+            else:
+                db.add(KxBtcCandle(open_time=bucket, open=yes_mid, high=yes_mid, low=yes_mid, close=yes_mid, volume=0.0))
 
         db.commit()
     finally:
