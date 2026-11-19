@@ -204,33 +204,39 @@ function MarketHeader() {
     )
   }
 
-  const yesMidPct = ((market.yes_bid + market.yes_ask) / 2 * 100).toFixed(1)
+  const quote = (value: number | null | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1
+      ? (value * 100).toFixed(0) + '¢' : '—'
+  const validSide = (bid: number | null | undefined, ask: number | null | undefined) =>
+    typeof bid === 'number' && typeof ask === 'number' &&
+    Number.isFinite(bid) && Number.isFinite(ask) && bid >= 0 && ask > 0 && bid <= ask && ask <= 1
+  const yesValid = validSide(market.yes_bid, market.yes_ask)
+  const noValid = validSide(market.no_bid, market.no_ask)
 
   return (
-    <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-4 py-2 flex items-center gap-5 flex-wrap">
-      <div>
-        <span className="text-[13px] font-semibold text-[#e0edff]">
-          {market.title}
-        </span>
-        <span className="ml-2 text-[10px] text-[#9db4ca]">{market.ticker}</span>
+    <div className="shrink-0 border-b border-[#254158] bg-[#071626] px-3 py-2" aria-label="Cotizaciones de ambos contratos Kalshi">
+      <div className="flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
+        <span className="truncate">KALSHI BTC · 15M · {market.ticker}</span>
+        <span className="shrink-0">Cierra en <strong className="text-[#e0edff]">{timeRemaining(market.close_time)}</strong></span>
       </div>
-<div className="text-[11px]">
-        <span className="text-[#9db4ca] mr-1">YES</span>
-        <span className="text-[#26a69a] font-medium tabular-nums">{yesMidPct}%</span>
-        <span className="text-[#9598a1] ml-1">
-          ({(market.yes_bid * 100).toFixed(0)}/{(market.yes_ask * 100).toFixed(0)}c)
-        </span>
+      <div className="mt-1 grid grid-cols-2 gap-2">
+        <div className="rounded border border-[#176b55] bg-[#0a2524] px-2 py-1.5">
+          <div className="text-xs font-bold text-emerald-400">↑ SUBE · SÍ (YES)</div>
+          <div className="text-[11px] text-[#e0edff] tabular-nums">Comprar <strong>{yesValid ? quote(market.yes_ask) : '—'}</strong> · Vender <strong>{yesValid ? quote(market.yes_bid) : '—'}</strong></div>
+        </div>
+        <div className="rounded border border-[#823747] bg-[#29151f] px-2 py-1.5">
+          <div className="text-xs font-bold text-rose-400">↓ BAJA · NO (NO)</div>
+          <div className="text-[11px] text-[#e0edff] tabular-nums">Comprar <strong>{noValid ? quote(market.no_ask) : '—'}</strong> · Vender <strong>{noValid ? quote(market.no_bid) : '—'}</strong></div>
+        </div>
       </div>
-      <div className="text-[11px]">
-        <span className="text-[#9db4ca] mr-1">Volume</span>
-        <span className="text-[#e0edff] tabular-nums">{market.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+      <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-[#9db4ca]">
+        <span>Volumen: {market.volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+        <span>Cotizaciones de mercado · no son señales de IA</span>
       </div>
-      <div className="text-[11px]">
-        <span className="text-[#9db4ca] mr-1">Closes in</span>
-        <span className="text-[#e0edff] tabular-nums font-semibold">{timeRemaining(market.close_time)}</span>
-      </div>
-      <div className="flex-1" />
-      <span className="text-[10px] text-[#9598a1]">Settles on CF Benchmarks BRTI · BTC price feed below is a Coinbase spot proxy, not licensed BRTI data</span>
+      <details className="mt-1 text-[10px] text-[#9db4ca]">
+        <summary className="cursor-pointer">Referencia de liquidación</summary>
+        Kalshi liquida según CF Benchmarks BRTI; las velas BTC/USD mostradas provienen de Coinbase y no son datos BRTI con licencia.
+      </details>
     </div>
   )
 }
