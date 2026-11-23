@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ymc-btc-signals
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /docs
+    envVars:
+      - key: YMC_SIGNALS_ONLY
+        value: "1"
+      - key: SIMULATION_MODE
+        value: "true"
+      - key: PYTHONUNBUFFERED
+        value: "1"
