@@ -214,15 +214,19 @@ async def startup():
     print(f"Cities: {settings.WEATHER_CITIES}")
     print("=" * 60)
 
-    from backend.core.scheduler import start_scheduler, log_event
-    start_scheduler()
-    log_event("success", f"Kalshi weather bot started [{mode}]")
+    if os.getenv("YMC_SIGNALS_ONLY", "0") == "1":
+        print("YMC signals-only mode: trading scheduler disabled")
+    else:
+        from backend.core.scheduler import start_scheduler, log_event
+        start_scheduler()
+        log_event("success", f"Kalshi weather bot started [{mode}]")
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    from backend.core.scheduler import stop_scheduler
-    stop_scheduler()
+    if os.getenv("YMC_SIGNALS_ONLY", "0") != "1":
+        from backend.core.scheduler import stop_scheduler
+        stop_scheduler()
 
 
 # ---------------------------------------------------------------------------
