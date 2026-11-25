@@ -1,5 +1,6 @@
 import argparse
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 import httpx
 import joblib
@@ -14,7 +15,7 @@ def history(days):
         for a in range(start,end, 250*60):
             b=min(a+250*60,end)
             response=client.get("https://api.exchange.coinbase.com/products/BTC-USD/candles",
-                                params={"granularity":60,"start":a,"end":b})
+                                params={"granularity":60,"start":datetime.fromtimestamp(a,timezone.utc).isoformat(),"end":datetime.fromtimestamp(b,timezone.utc).isoformat()})
             response.raise_for_status()
             for r in response.json():
                 t=int(r[0])
