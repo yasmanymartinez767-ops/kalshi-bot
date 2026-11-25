@@ -1,0 +1,26 @@
+name: YMC rebuild validation
+on:
+  push:
+    branches: [ymc-rebuild]
+    paths: ['ymc_next/**', '.github/workflows/ymc-next.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run unit tests
+        run: docker build -f ymc_next/Dockerfile -t ymc-next .
+      - name: Train on real historical data
+        run: |
+          mkdir -p artifacts
+          docker run --rm -v "$PWD/artifacts:/app/artifacts" ymc-next python -m ymc_next.train --days 30
+      - name: Preserve evaluated models
+        uses: actions/upload-artifact@v4
+        with:
+          name: ymc-evaluated-models
+          path: artifacts/
+          if-no-files-found: error
