@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager,suppress
 import httpx
 from fastapi import FastAPI,WebSocket,WebSocketDisconnect
 from ymc_next.feed import snapshot
+from ymc_next.inference import predict
 
 state={"status":"starting","signal":"ESPERAR","candles":[]}
 
@@ -12,6 +13,10 @@ async def worker():
         while True:
             try:
                 data=await snapshot(client)
+                data["predictions"]=await asyncio.to_thread(predict,data["candles"])
+                p=data["predictions"].get("15")
+                if p:
+                    data["signal"]="SUBE" if p["up"]>=.7 else "BAJA" if p["down"]>=.7 else "ESPERAR"
                 state.clear()
                 state.update(data,status="connected")
                 delay=8
