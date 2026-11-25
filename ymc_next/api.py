@@ -51,3 +51,14 @@ async def stream(ws:WebSocket):
             await asyncio.sleep(1)
     except WebSocketDisconnect:
         pass
+
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+@app.get("/")
+async def dashboard():
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
+
+@app.get("/health")
+async def health():
+    return {"service":"ymc-next","market_status":current()["status"]}
