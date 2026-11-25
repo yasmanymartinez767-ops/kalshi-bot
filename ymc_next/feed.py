@@ -1,6 +1,7 @@
 import asyncio
 import math
 import time
+from datetime import datetime
 import httpx
 from ymc_next.market import Candle, validate, crosscheck
 
@@ -30,8 +31,18 @@ async def snapshot(client):
     matching=[r for r in series if int(r[0])==candles[-1].ts]
     if not matching or not crosscheck(candles[-1].close,float(matching[0][4])):
         raise ValueError("Exchange mismatch")
+    active=[]
+    if not isinstance(kalshi,Exception):
+        for market in kalshi.get("markets",[]):
+            try:
+                end=datetime.fromisoformat(market["close_time"].replace("Z","+00:00")).timestamp()
+                if end>now and market.get("ticker","").startswith("KXBTC15M"):
+                    active.append((end,market))
+            except (KeyError,TypeError,ValueError):
+                continue
+    active.sort(key=lambda item:item[0])
     return {"candles":[vars(c) for c in candles],"partial_candle":vars(partial) if partial else None,"checked_at":now,
-            "kalshi":None if isinstance(kalshi,Exception) else kalshi.get("markets",[]),
+            "kalshi":[active[0][1]] if active else [],
             "signal":"EN EVALUACION"}
 
 async def fetch_snapshot():
