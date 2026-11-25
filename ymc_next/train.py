@@ -8,15 +8,27 @@ from ymc_next.market import Candle,validate
 from ymc_next.model import train
 
 def history(days):
-    end=int(time.time())//60*60
+    end=int(time.time())//60*60-120
     start=end-days*86400
     rows={}
     with httpx.Client(timeout=20) as client:
         for a in range(start,end, 250*60):
             b=min(a+250*60,end)
-            response=client.get("https://api.exchange.coinbase.com/products/BTC-USD/candles",
-                                params={"granularity":60,"start":datetime.fromtimestamp(a,timezone.utc).isoformat(),"end":datetime.fromtimestamp(b,timezone.utc).isoformat()})
-            response.raise_for_status()
+            for attempt in range(5):
+                try:
+                    response=client.get("https://api.exchange.coinbase.com/products/BTC-USD/candles",
+                                        params={"granularity":60,"start":datetime.fromtimestamp(a,timezone.utc).isoformat(),"end":datetime.fromtimestamp(b,timezone.utc).isoformat()})
+                    if response.status_code in (429,500,502,503,504):
+                        if attempt==4:
+                            response.raise_for_status()
+                        time.sleep(min(20,2**attempt))
+                        continue
+                    response.raise_for_status()
+                    break
+                except (httpx.TimeoutException,httpx.NetworkError):
+                    if attempt==4:
+                        raise
+                    time.sleep(min(20,2**attempt))
             for r in response.json():
                 t=int(r[0])
                 if start<=t<end:
